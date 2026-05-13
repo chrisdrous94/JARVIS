@@ -14,6 +14,12 @@
             --bg-dark: #050a0f;
         }
 
+        /* Stealth Mode Overrides */
+        body.stealth-mode {
+            --jarvis-blue: #ff2a2a;
+            --jarvis-glow: rgba(255, 42, 42, 0.6);
+        }
+
         body {
             background-color: var(--bg-dark);
             color: var(--jarvis-blue);
@@ -27,6 +33,7 @@
             justify-content: flex-start;
             padding-top: 4rem;
             padding-bottom: 2rem;
+            transition: all 0.5s ease;
             background-image: 
                 radial-gradient(circle at 50% 50%, rgba(0, 210, 255, 0.05) 0%, transparent 70%),
                 linear-gradient(rgba(0, 210, 255, 0.02) 1px, transparent 1px),
@@ -154,10 +161,24 @@
             font-weight: bold;
         }
 
+        .reminder-tag {
+            background: rgba(0, 210, 255, 0.1);
+            border: 1px solid rgba(0, 210, 255, 0.3);
+            font-size: 10px;
+            padding: 4px 10px;
+            margin: 4px;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            border-radius: 4px;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn { from { opacity: 0; transform: translateX(-10px); } to { opacity: 1; transform: translateX(0); } }
         @keyframes scan { 0% { top: -10%; } 100% { top: 110%; } }
     </style>
 </head>
-<body class="p-4">
+<body class="p-4" id="main-body">
     <div class="scanline"></div>
 
     <!-- HUD Overlay -->
@@ -165,12 +186,15 @@
         <div class="flex flex-col gap-1">
             <div>STATUS: <span id="status-tag" class="text-green-400">ONLINE</span></div>
             <div id="clock">TIME: --:--:--</div>
+            <div>TEMP: <span id="temp-status" class="text-white">--°C</span></div>
+            <div>AQI: <span id="aqi-status" class="text-white">--</span></div>
             <div>WAKE-WORD: <span id="wake-status" class="text-red-500 font-bold">DISABLED</span></div>
         </div>
         <div class="text-right flex flex-col gap-1">
+            <div>BATTERY: <span id="battery-status" class="text-green-400">100%</span></div>
+            <div>NETWORK: <span id="network-status" class="text-green-400">CONNECTED</span></div>
             <div>ENGINE: <span class="text-cyan-400">GROQ_LLAMA_3.3</span></div>
-            <div>UPLINK: <span id="uplink-status">STABLE</span></div>
-            <div>MEDIA_OUT: <span class="text-cyan-400 font-bold tracking-tighter">YT_AUTO_POPUP</span></div>
+            <div>MODE: <span id="mode-text" class="font-bold">STANDARD</span></div>
         </div>
     </div>
 
@@ -186,7 +210,7 @@
     </div>
 
     <!-- Main Visual -->
-    <div class="flex flex-col items-center gap-4 mb-6 mt-12 w-full">
+    <div class="flex flex-col items-center gap-4 mb-6 mt-16 w-full">
         <div class="arc-reactor" id="mainCore">
             <div class="ring outer-ring"></div>
             <div class="ring middle-ring"></div>
@@ -202,15 +226,26 @@
     <!-- Interface -->
     <div class="w-full max-w-xl px-2">
         <!-- Terminal -->
-        <div class="hud-panel p-4 mb-4 h-48 overflow-y-auto terminal-log flex flex-col-reverse" id="chatWindow">
+        <div class="hud-panel p-4 mb-4 h-40 overflow-y-auto terminal-log flex flex-col-reverse" id="chatWindow">
             <div id="msgBuffer"></div>
+        </div>
+
+        <!-- Reminders / Intelligence Panel -->
+        <div class="hud-panel p-3 mb-4 orbitron" id="intelligence-panel">
+            <div class="flex justify-between items-center mb-2">
+                <div class="text-[8px] opacity-60 tracking-widest">NEURAL_REGISTRY</div>
+                <button id="purgeCacheBtn" class="text-[8px] opacity-40 hover:opacity-100 transition-opacity">PURGE_CACHE</button>
+            </div>
+            <div id="reminder-list" class="flex flex-wrap">
+                <span class="opacity-30 text-[10px]">No active reminders, Sir.</span>
+            </div>
         </div>
 
         <!-- Music HUD -->
         <div class="hud-panel p-4 mb-4 orbitron">
             <div class="flex justify-between items-center mb-2">
                 <div class="text-[10px] tracking-widest opacity-60">YT_AUDIO_PROTOCOL</div>
-                <div id="popup-warning" class="text-[8px] text-red-500 hidden animate-pulse">POP-UP BLOCKED! CHECK BROWSER BAR</div>
+                <div id="popup-warning" class="text-[8px] text-red-500 hidden animate-pulse">POP-UP BLOCKED!</div>
             </div>
             <div class="flex items-center gap-4">
                 <div class="flex flex-col flex-grow">
@@ -267,74 +302,138 @@
         const saveKeyBtn = document.getElementById('saveKeyBtn');
         const resetKeyBtn = document.getElementById('resetKeyBtn');
         const popupWarning = document.getElementById('popup-warning');
-
-        // Music UI
-        const trackTitle = document.getElementById('track-title');
-        const trackArtist = document.getElementById('track-artist');
+        const body = document.getElementById('main-body');
+        const modeText = document.getElementById('mode-text');
+        const reminderListEl = document.getElementById('reminder-list');
+        const tempStatus = document.getElementById('temp-status');
+        const aqiStatus = document.getElementById('aqi-status');
         const playPauseBtn = document.getElementById('playPauseTrack');
-        const nextTrackBtn = document.getElementById('nextTrack');
-        const prevTrackBtn = document.getElementById('prevTrack');
+        const purgeCacheBtn = document.getElementById('purgeCacheBtn');
 
         let isAlwaysListening = false;
         let isProcessing = false;
-
-        // --- YOUTUBE LOGIC ---
-        const playlist = [
-            { title: "STARK_EXPO_MIX", url: "https://www.youtube.com/results?search_query=ac+dc+iron+man+soundtrack" },
-            { title: "INDUSTRIAL_CORE", url: "https://www.youtube.com/watch?v=D58T0_J1J3Y" },
-            { title: "NEURAL_LINK_LOFI", url: "https://www.youtube.com/watch?v=jfKfPfyJRdk" }
-        ];
-        let currentTrackIndex = 0;
-
-        function openYouTube(url, title = "YOUTUBE_OUTPUT") {
-            trackTitle.innerText = title;
-            trackArtist.innerText = "OPENING_TAB...";
-            core.classList.add('playing');
-            
-            const win = window.open(url, '_blank');
-            if (!win) {
-                popupWarning.classList.remove('hidden');
-                addLog("SYSTEM", `Sir, pop-up was blocked. <a href="${url}" target="_blank" class="yt-link">CLICK HERE TO OPEN ${title}</a>`);
-            } else {
-                popupWarning.classList.add('hidden');
-                addLog("SYSTEM", `Redirecting to ${title}...`);
-            }
-        }
-
-        playPauseBtn.onclick = () => openYouTube(playlist[currentTrackIndex].url, playlist[currentTrackIndex].title);
-        nextTrackBtn.onclick = () => { currentTrackIndex = (currentTrackIndex + 1) % playlist.length; openYouTube(playlist[currentTrackIndex].url, playlist[currentTrackIndex].title); };
-        prevTrackBtn.onclick = () => { currentTrackIndex = (currentTrackIndex - 1 + playlist.length) % playlist.length; openYouTube(playlist[currentTrackIndex].url, playlist[currentTrackIndex].title); };
-
-        // --- HUD Clock ---
-        setInterval(() => {
-            document.getElementById('clock').innerText = `TIME: ${new Date().toLocaleTimeString()}`;
-        }, 1000);
+        let reminders = JSON.parse(localStorage.getItem('jarvis_reminders')) || [];
+        let currentWeatherData = { temp: null, aqi: null, aqiDesc: "Unknown" };
 
         // --- API KEY MANAGEMENT ---
         function checkApiKey() {
-            if (!API_KEY) apiSetup.classList.remove('hidden');
-            else apiSetup.classList.add('hidden');
+            if (!API_KEY) {
+                apiSetup.classList.remove('hidden');
+            } else {
+                apiSetup.classList.add('hidden');
+            }
         }
 
-        saveKeyBtn.addEventListener('click', () => {
-            const val = apiKeyInput.value.trim();
-            if (val.startsWith('gsk_')) {
-                localStorage.setItem('jarvis_groq_key', val);
-                API_KEY = val;
-                apiSetup.classList.add('hidden');
-                speak("Neural links established. Cogntive engine online, Sir.");
-            } else {
-                alert("Invalid key format.");
+        // --- HARDWARE & ENVIRONMENTAL DIAGNOSTICS ---
+        function updateHardwareInfo() {
+            if (navigator.getBattery) {
+                navigator.getBattery().then(battery => {
+                    const updateBattery = () => {
+                        const lvl = Math.round(battery.level * 100);
+                        const el = document.getElementById('battery-status');
+                        if(el) {
+                            el.innerText = lvl + "%";
+                            el.className = lvl < 20 ? 'text-red-500' : 'text-green-400';
+                        }
+                    };
+                    updateBattery();
+                    battery.addEventListener('levelchange', updateBattery);
+                }).catch(() => {});
             }
-        });
+            const updateOnline = () => {
+                const online = navigator.onLine;
+                const el = document.getElementById('network-status');
+                if(el) {
+                    el.innerText = online ? "CONNECTED" : "OFFLINE";
+                    el.className = online ? 'text-green-400' : 'text-red-500';
+                }
+            };
+            window.addEventListener('online', updateOnline);
+            window.addEventListener('offline', updateOnline);
+            updateOnline();
+        }
 
-        resetKeyBtn.addEventListener('click', () => {
-            localStorage.removeItem('jarvis_groq_key');
-            API_KEY = '';
-            checkApiKey();
-        });
+        async function updateEnvironmentals() {
+            if (!navigator.geolocation) return;
+            
+            navigator.geolocation.getCurrentPosition(async (pos) => {
+                const { latitude, longitude } = pos.coords;
+                try {
+                    // Weather Data
+                    const weatherRes = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current_weather=true`);
+                    const weather = await weatherRes.json();
+                    currentWeatherData.temp = Math.round(weather.current_weather.temperature);
+                    if(tempStatus) tempStatus.innerText = `${currentWeatherData.temp}°C`;
 
-        // --- Speech Recognition ---
+                    // Air Quality Data
+                    const airRes = await fetch(`https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${latitude}&longitude=${longitude}&current=european_aqi`);
+                    const air = await airRes.json();
+                    const aqiValue = air.current.european_aqi;
+                    currentWeatherData.aqi = aqiValue;
+
+                    let desc = "Unknown";
+                    if (aqiValue <= 20) desc = "Optimal";
+                    else if (aqiValue <= 40) desc = "Fair";
+                    else if (aqiValue <= 60) desc = "Moderate";
+                    else if (aqiValue <= 80) desc = "Degraded";
+                    else desc = "Hazardous";
+                    
+                    currentWeatherData.aqiDesc = desc;
+                    if(aqiStatus) {
+                        aqiStatus.innerText = `${aqiValue} (${desc.toUpperCase()})`;
+                        aqiStatus.className = aqiValue > 60 ? 'text-red-500' : 'text-white';
+                    }
+                } catch (e) {
+                    console.error("Environmental scan failed", e);
+                }
+            }, (err) => {
+                console.warn("Location access denied.");
+            });
+        }
+
+        // --- REMINDER LOGIC ---
+        function updateReminderUI() {
+            if (reminders.length === 0) {
+                reminderListEl.innerHTML = '<span class="opacity-30 text-[10px]">No active reminders, Sir.</span>';
+                return;
+            }
+            reminderListEl.innerHTML = reminders.map((r, i) => `
+                <span class="reminder-tag">
+                    ${r.toUpperCase()} 
+                    <span onclick="removeReminder(${i})" class="ml-1 cursor-pointer hover:text-white">×</span>
+                </span>
+            `).join('');
+        }
+
+        window.removeReminder = (index) => {
+            reminders.splice(index, 1);
+            localStorage.setItem('jarvis_reminders', JSON.stringify(reminders));
+            updateReminderUI();
+            speak("Entry removed from neural cache.");
+        };
+
+        function clearAllRemindersVoice() {
+            reminders = [];
+            localStorage.setItem('jarvis_reminders', JSON.stringify(reminders));
+            updateReminderUI();
+            speak("All neural reminders have been purged, Sir.");
+        }
+
+        // --- YOUTUBE LOGIC ---
+        const playlist = [{ title: "STARK_EXPO_MIX", url: "https://www.youtube.com/results?search_query=ac+dc+iron+man+soundtrack" }];
+        
+        function openYouTube(url, title = "YOUTUBE_OUTPUT") {
+            core.classList.add('playing');
+            const win = window.open(url, '_blank');
+            if (!win) {
+                if(popupWarning) popupWarning.classList.remove('hidden');
+                addLog("SYSTEM", `Blocked. <a href="${url}" target="_blank" class="yt-link">CLICK HERE TO OPEN ${title}</a>`);
+            } else {
+                if(popupWarning) popupWarning.classList.add('hidden');
+            }
+        }
+
+        // --- Speech Engine ---
         const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         let recognizer;
 
@@ -377,19 +476,12 @@
                 if (isAlwaysListening && !isProcessing) restartListening();
             };
 
-            recognizer.onerror = (e) => {
-                if (e.error !== 'no-speech') {
-                    console.error("Speech Error:", e.error);
-                }
-                if (isAlwaysListening) restartListening();
-            };
+            recognizer.onerror = () => { if (isAlwaysListening) restartListening(); };
         }
 
         function restartListening() {
             if (isAlwaysListening && !isProcessing) {
-                setTimeout(() => {
-                    try { recognizer.start(); } catch(e) {}
-                }, 400);
+                setTimeout(() => { try { recognizer.start(); } catch(e) {} }, 400);
             }
         }
 
@@ -418,26 +510,67 @@
         async function handleInput(cmd) {
             const query = cmd.toLowerCase();
             
-            // IMPROVED MUSIC PARSING
-            if (query.startsWith('play ') || query.includes('play music') || query.includes('start music')) {
-                let song = query.replace('play music', '').replace('play', '').replace('jarvis', '').trim();
-                
-                if (song) {
-                    const url = `https://www.youtube.com/results?search_query=${encodeURIComponent(song)}`;
-                    openYouTube(url, song.toUpperCase());
-                    speak(`Searching YouTube for ${song}, Sir.`);
+            // --- ENVIRONMENTAL PROTOCOLS ---
+            if (query.includes('weather') || query.includes('temperature')) {
+                if (currentWeatherData.temp !== null) {
+                    speak(`The current temperature is ${currentWeatherData.temp} degrees Celsius, Sir.`);
                 } else {
-                    openYouTube(playlist[currentTrackIndex].url, playlist[currentTrackIndex].title);
-                    speak("Initiating default Stark playlist.");
+                    speak("Environmental sensors are still calibrating, Sir. One moment.");
+                    updateEnvironmentals();
+                }
+                return;
+            }
+
+            if (query.includes('air quality') || query.includes('aqi')) {
+                if (currentWeatherData.aqi !== null) {
+                    speak(`The air quality index is currently at ${currentWeatherData.aqi}, which is considered ${currentWeatherData.aqiDesc}.`);
+                } else {
+                    speak("Atmospheric sensors are offline. Initiating scan.");
+                    updateEnvironmentals();
+                }
+                return;
+            }
+
+            if (query.includes('environmental report') || query.includes('status report')) {
+                const report = `Status report: Outside temperature is ${currentWeatherData.temp || 'unknown'} degrees. Air quality is ${currentWeatherData.aqiDesc}. Systems are stable and the battery is at ${document.getElementById('battery-status').innerText}.`;
+                speak(report);
+                return;
+            }
+
+            // --- REMINDER PROTOCOLS ---
+            if (query.includes('remind me to ')) {
+                const task = query.split('remind me to ')[1].trim();
+                reminders.push(task);
+                localStorage.setItem('jarvis_reminders', JSON.stringify(reminders));
+                updateReminderUI();
+                speak(`I've added "${task}" to your neural notes, Sir.`);
+                return;
+            }
+
+            if (query.includes('what are my reminders') || query.includes('show reminders')) {
+                if (reminders.length === 0) speak("Your neural cache is currently empty, Sir.");
+                else speak(`You have ${reminders.length} reminders: ${reminders.join(", and ")}.`);
+                return;
+            }
+
+            // --- MUSIC & SYSTEM ---
+            if (query.startsWith('play ') || query.includes('play music')) {
+                let song = query.replace('play music', '').replace('play', '').replace('jarvis', '').trim();
+                if (song) {
+                    window.open(`https://www.youtube.com/results?search_query=${encodeURIComponent(song)}`, '_blank');
+                    speak(`Searching YouTube for ${song}.`);
+                } else {
+                    openYouTube(playlist[0].url, playlist[0].title);
+                    speak("Playing default Stark mix.");
                 }
                 return;
             }
 
             if (query.includes('time')) { speak(`The time is ${new Date().toLocaleTimeString()}, Sir.`); return; }
-            if (query.includes('open google')) { speak("Opening search protocols."); window.open('https://google.com', '_blank'); return; }
-            if (query.includes('stop listening')) { toggleContinuous(false); speak("Voice recognition suspended."); return; }
+            if (query.includes('stealth mode')) { body.classList.add('stealth-mode'); modeText.innerText = "STEALTH"; speak("Stealth protocol initiated."); return; }
+            if (query.includes('standard mode')) { body.classList.remove('stealth-mode'); modeText.innerText = "STANDARD"; speak("Restoring standard protocols."); return; }
 
-            if (!API_KEY) { speak("Neural credentials required."); checkApiKey(); return; }
+            if (!API_KEY) { checkApiKey(); return; }
             statusTag.innerText = 'THINKING';
             await callNeuralNetwork(cmd);
             statusTag.innerText = 'ONLINE';
@@ -459,11 +592,9 @@
                 if (!response.ok) throw new Error("Neural Uplink Failure");
                 const data = await response.json();
                 speak(data.choices[0].message.content);
-                uplinkStatus.innerText = "STABLE";
             } catch (err) {
                 addLog("ERROR", err.message);
                 speak("I'm afraid the neural link has been disrupted, Sir.");
-                uplinkStatus.innerText = "ERROR";
             }
         }
 
@@ -482,13 +613,34 @@
             }
         }
 
+        // --- Event Listeners ---
         voiceBtn.onclick = () => { isAlwaysListening = false; toggleContinuous(false); recognizer.start(); };
         continuousBtn.onclick = () => toggleContinuous();
         sendBtn.onclick = () => { const val = commandInput.value.trim(); if (val) { addLog("USER", val); handleInput(val); commandInput.value = ''; } };
         commandInput.onkeypress = (e) => { if (e.key === 'Enter') sendBtn.click(); };
         resetBtn.onclick = () => { msgBuffer.innerHTML = ''; transcript.innerText = '"HUD reset."'; };
+        saveKeyBtn.onclick = () => {
+            const val = apiKeyInput.value.trim();
+            if (val.startsWith('gsk_')) {
+                localStorage.setItem('jarvis_groq_key', val);
+                API_KEY = val;
+                apiSetup.classList.add('hidden');
+                speak("Neural links established. Cogntive engine online, Sir.");
+            } else alert("Invalid format.");
+        };
+        resetKeyBtn.onclick = () => { localStorage.removeItem('jarvis_groq_key'); API_KEY = ''; apiSetup.classList.remove('hidden'); };
+        playPauseBtn.onclick = () => openYouTube(playlist[0].url, playlist[0].title);
+        purgeCacheBtn.onclick = clearAllRemindersVoice;
 
-        window.onload = () => { checkApiKey(); setTimeout(() => { if (API_KEY) speak("Systems initialized. Standby for command."); }, 800); };
+        window.onload = () => { 
+            console.log("J.A.R.V.I.S. System Init...");
+            checkApiKey(); 
+            updateHardwareInfo();
+            updateReminderUI();
+            updateEnvironmentals(); 
+            setTimeout(() => { if (API_KEY) speak("Systems initialized. Sensors calibrated. Standing by, Sir."); }, 800); 
+        };
+        setInterval(updateEnvironmentals, 1800000); 
     </script>
 </body>
 </html>
