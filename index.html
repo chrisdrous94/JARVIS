@@ -85,6 +85,12 @@
             box-shadow: 0 0 45px #ff0055;
             animation: pulse 1.2s infinite;
         }
+        
+        .playing .inner-core {
+            animation: pulse 2s ease-in-out infinite;
+            background: radial-gradient(circle, #fff 0%, #00ffcc 60%, transparent 100%);
+            box-shadow: 0 0 40px #00ffcc;
+        }
 
         @keyframes rotate-clockwise { from { transform: translate(-50%, -50%) rotate(0deg); } to { transform: translate(-50%, -50%) rotate(360deg); } }
         @keyframes rotate-counter { from { transform: translate(-50%, -50%) rotate(360deg); } to { transform: translate(-50%, -50%) rotate(0deg); } }
@@ -154,15 +160,15 @@
             <div>WAKE-WORD: <span id="wake-status" class="text-red-500 font-bold">DISABLED</span></div>
         </div>
         <div class="text-right flex flex-col gap-1">
-            <div>ENGINE: <span class="text-cyan-400">GROQ_LLAMA_3.1</span></div>
+            <div>ENGINE: <span class="text-cyan-400">GROQ_LLAMA_3.3</span></div>
             <div>UPLINK: <span id="uplink-status">STABLE</span></div>
-            <div>DEPLOYMENT: <span class="text-cyan-400">VERCEL_SAFE</span></div>
+            <div>MEDIA_OUT: <span class="text-cyan-400 font-bold tracking-tighter">YOUTUBE_REDIRECT</span></div>
         </div>
     </div>
 
-    <!-- API Setup Modal (Shown if key is missing) -->
+    <!-- API Setup Modal -->
     <div id="api-setup" class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm hidden">
-        <div id="api-modal" class="w-full max-w-md p-8 rounded-xl orbitron text-center">
+        <div id="api-modal" class="w-full max-md p-8 rounded-xl orbitron text-center">
             <h2 class="text-xl font-bold mb-4 tracking-widest">NEURAL LINK REQUIRED</h2>
             <p class="text-[10px] opacity-60 mb-6 leading-relaxed">SIR, PLEASE PROVIDE YOUR GROQ API KEY TO INITIALIZE THE COGNITIVE ENGINE. THIS WILL BE STORED LOCALLY ON YOUR DEVICE.</p>
             <input type="password" id="apiKeyInput" placeholder="Paste gsk_ key here..." 
@@ -181,16 +187,43 @@
         
         <div class="text-center">
             <h1 class="orbitron text-2xl font-bold tracking-[0.3em] mb-1">J.A.R.V.I.S.</h1>
-            <p id="transcript" class="italic text-xs opacity-50 min-h-[1rem]">"Standing by for instructions, Sir."</p>
+            <p id="transcript" class="italic text-xs opacity-50 min-h-[1rem]">"Awaiting neural sync, Sir."</p>
         </div>
     </div>
 
-    <!-- Command Console Area -->
+    <!-- Interface -->
     <div class="w-full max-w-xl px-2">
+        <!-- Terminal -->
         <div class="hud-panel p-4 mb-4 h-48 overflow-y-auto terminal-log flex flex-col-reverse" id="chatWindow">
             <div id="msgBuffer"></div>
         </div>
 
+        <!-- Music HUD -->
+        <div class="hud-panel p-4 mb-4 orbitron">
+            <div class="flex justify-between items-center mb-2">
+                <div class="text-[10px] tracking-widest opacity-60">YT_AUDIO_PROTOCOL_BETA</div>
+                <div class="text-[10px] opacity-60 tracking-widest uppercase">External Output</div>
+            </div>
+            <div class="flex items-center gap-4">
+                <div class="flex flex-col flex-grow">
+                    <span id="track-title" class="text-xs truncate w-48 text-white uppercase tracking-wider">No Media Selected</span>
+                    <span id="track-artist" class="text-[9px] opacity-50 uppercase tracking-tighter">Standby for Redirection</span>
+                </div>
+                <div class="flex gap-4">
+                    <button id="prevTrack" class="hover:text-white transition-colors">
+                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M6 6h2v12H6zm3.5 6L18 18V6z"/></svg>
+                    </button>
+                    <button id="playPauseTrack" class="hover:text-white transition-colors">
+                        <svg id="playIcon" class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M10 15V1h8v14h-8zm0 2h8v2h-8v-2zm-2-2H0V1h8v14zm0 2H0v2h8v-2zM4 4h2v2H4V4zm0 4h2v2H4V8zm10-4h2v2h-2V4zm0 4h2v2h-2V8z"/></svg>
+                    </button>
+                    <button id="nextTrack" class="hover:text-white transition-colors">
+                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Controls -->
         <div class="flex flex-col gap-4">
             <div class="flex gap-2">
                 <input type="text" id="commandInput" placeholder="Direct neural entry..." 
@@ -207,7 +240,7 @@
     </div>
 
     <script>
-        // --- SECURE CONFIGURATION ---
+        // --- CONFIGURATION ---
         let API_KEY = localStorage.getItem('jarvis_groq_key') || '';
         const MODEL_URL = "https://api.groq.com/openai/v1/chat/completions";
         
@@ -226,9 +259,51 @@
         const saveKeyBtn = document.getElementById('saveKeyBtn');
         const resetKeyBtn = document.getElementById('resetKeyBtn');
 
+        // Music UI Elements
+        const trackTitle = document.getElementById('track-title');
+        const trackArtist = document.getElementById('track-artist');
+        const playPauseBtn = document.getElementById('playPauseTrack');
+        const nextTrackBtn = document.getElementById('nextTrack');
+        const prevTrackBtn = document.getElementById('prevTrack');
+
         let isAlwaysListening = false;
         let isProcessing = false;
 
+        // --- YOUTUBE REDIRECTION LOGIC ---
+        const playlist = [
+            { title: "STARK_EXPO_MIX", url: "https://www.youtube.com/results?search_query=ac+dc+iron+man+soundtrack" },
+            { title: "INDUSTRIAL_CONSTRUCTION", url: "https://www.youtube.com/watch?v=D58T0_J1J3Y" },
+            { title: "NEURAL_LINK_LOFI", url: "https://www.youtube.com/watch?v=jfKfPfyJRdk" }
+        ];
+        let currentTrackIndex = 0;
+
+        function openYouTube(url, title = "YOUTUBE_OUTPUT") {
+            trackTitle.innerText = title;
+            trackArtist.innerText = "REDIRECTED_TO_TAB";
+            core.classList.add('playing');
+            window.open(url, '_blank');
+        }
+
+        function playDefaultMusic() {
+            openYouTube(playlist[currentTrackIndex].url, playlist[currentTrackIndex].title);
+        }
+
+        function playSpecificMusic(query) {
+            const searchUrl = `https://www.youtube.com/results?search_query=${encodeURIComponent(query)}`;
+            openYouTube(searchUrl, query.toUpperCase());
+        }
+
+        playPauseBtn.onclick = playDefaultMusic;
+        nextTrackBtn.onclick = () => {
+            currentTrackIndex = (currentTrackIndex + 1) % playlist.length;
+            playDefaultMusic();
+        };
+        prevTrackBtn.onclick = () => {
+            currentTrackIndex = (currentTrackIndex - 1 + playlist.length) % playlist.length;
+            playDefaultMusic();
+        };
+
+        // --- HUD Clock ---
         setInterval(() => {
             document.getElementById('clock').innerText = `TIME: ${new Date().toLocaleTimeString()}`;
         }, 1000);
@@ -349,6 +424,33 @@
 
         async function handleInput(cmd) {
             const query = cmd.toLowerCase();
+            
+            // YOUTUBE MUSIC COMMANDS
+            if (query.includes('play music') || query.includes('start music')) {
+                if (query.length > 12) {
+                    const songName = query.replace('play music', '').replace('play', '').trim();
+                    playSpecificMusic(songName);
+                    speak(`Searching YouTube for ${songName}, Sir.`);
+                } else {
+                    playDefaultMusic();
+                    speak("Opening the Stark Expo theme on YouTube.");
+                }
+                return;
+            }
+            if (query.includes('play') && (query.includes('on youtube') || query.includes('youtube'))) {
+                const songName = query.replace('play', '').replace('on youtube', '').replace('youtube', '').trim();
+                playSpecificMusic(songName);
+                speak(`Redirecting to YouTube for ${songName}.`);
+                return;
+            }
+            if (query.includes('next song') || query.includes('next track')) {
+                currentTrackIndex = (currentTrackIndex + 1) % playlist.length;
+                playDefaultMusic();
+                speak("Skipping to the next YouTube track.");
+                return;
+            }
+
+            // SYSTEM COMMANDS
             if (query.includes('time')) {
                 speak(`The time is precisely ${new Date().toLocaleTimeString()}, Sir.`);
                 return;
@@ -384,7 +486,7 @@
                         'Authorization': `Bearer ${API_KEY}`
                     },
                     body: JSON.stringify({
-                        model: "llama-3.1-70b-versatile",
+                        model: "llama-3.3-70b-versatile",
                         messages: [
                             { role: "system", content: "You are JARVIS. A sophisticated, brief, professional AI assistant. Address the user as Sir. Maintain an Iron Man HUD persona. Responses should be under 3 sentences." },
                             { role: "user", content: prompt }
@@ -464,7 +566,7 @@
         window.onload = () => {
             checkApiKey();
             setTimeout(() => {
-                if (API_KEY) speak("Systems stabilized. Vercel deployment verified. Standing by for instructions, Sir.");
+                if (API_KEY) speak("Systems stabilized. YouTube audio protocols active. Standing by for your command, Sir.");
             }, 800);
         };
     </script>
