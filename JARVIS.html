@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>J.A.R.V.I.S. - Virtual Assistant</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Roboto+Mono:wght@300;400&display=swap');
+
+        :root {
+            --jarvis-blue: #00d2ff;
+            --jarvis-glow: rgba(0, 210, 255, 0.5);
+            --bg-dark: #050a0f;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            color: var(--jarvis-blue);
+            font-family: 'Roboto Mono', monospace;
+            overflow: hidden;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .orbitron { font-family: 'Orbitron', sans-serif; }
+
+        /* Arc Reactor Animation */
+        .arc-container {
+            position: relative;
+            width: 180px;
+            height: 180px;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+        }
+
+        .arc-container:active { transform: scale(0.95); }
+
+        .arc-circle {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            border: 2px solid var(--jarvis-blue);
+            border-radius: 50%;
+            box-shadow: 0 0 15px var(--jarvis-glow), inset 0 0 15px var(--jarvis-glow);
+        }
+
+        .outer-ring {
+            width: 160px;
+            height: 160px;
+            border-style: dashed;
+            animation: rotate 10s linear infinite;
+        }
+
+        .inner-ring {
+            width: 110px;
+            height: 110px;
+            border-width: 4px;
+            border-style: double;
+            animation: rotate-rev 5s linear infinite;
+        }
+
+        .core {
+            width: 50px;
+            height: 50px;
+            background: radial-gradient(circle, #fff 0%, var(--jarvis-blue) 70%);
+            box-shadow: 0 0 30px var(--jarvis-blue);
+        }
+
+        .listening .core {
+            animation: pulse 1.5s ease-in-out infinite;
+            background: radial-gradient(circle, #fff 0%, #ff0055 70%);
+            box-shadow: 0 0 30px #ff0055;
+        }
+
+        @keyframes rotate { from { transform: translate(-50%, -50%) rotate(0deg); } to { transform: translate(-50%, -50%) rotate(360deg); } }
+        @keyframes rotate-rev { from { transform: translate(-50%, -50%) rotate(360deg); } to { transform: translate(-50%, -50%) rotate(0deg); } }
+        @keyframes pulse { 0% { transform: translate(-50%, -50%) scale(1); opacity: 0.8; } 50% { transform: translate(-50%, -50%) scale(1.2); opacity: 1; } 100% { transform: translate(-50%, -50%) scale(1); opacity: 0.8; } }
+
+        .glass-panel {
+            background: rgba(0, 210, 255, 0.05);
+            border: 1px solid rgba(0, 210, 255, 0.2);
+            backdrop-filter: blur(10px);
+            border-radius: 10px;
+        }
+
+        .input-jarvis {
+            background: rgba(0, 0, 0, 0.3);
+            border-bottom: 1px solid var(--jarvis-blue);
+            color: var(--jarvis-blue);
+            outline: none;
+            width: 100%;
+            padding: 8px;
+            font-size: 0.9rem;
+        }
+
+        .btn-jarvis {
+            border: 1px solid var(--jarvis-blue);
+            padding: 6px 15px;
+            transition: all 0.3s;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-size: 0.7rem;
+        }
+
+        .btn-jarvis:hover {
+            background: var(--jarvis-blue);
+            color: var(--bg-dark);
+        }
+
+        .scroll-hide::-webkit-scrollbar { display: none; }
+    </style>
+</head>
+<body class="p-4">
+
+    <!-- Header -->
+    <div class="fixed top-4 left-6 right-6 flex justify-between orbitron text-[10px] opacity-60">
+        <div>SYSTEM: <span id="sys-status" class="text-green-400">ONLINE</span></div>
+        <div id="clock">--:--:--</div>
+    </div>
+
+    <!-- Interface -->
+    <div class="flex flex-col items-center w-full max-w-2xl gap-6">
+        <div class="arc-container" id="arcTrigger">
+            <div class="arc-circle outer-ring"></div>
+            <div class="arc-circle inner-ring"></div>
+            <div class="arc-circle core"></div>
+        </div>
+        
+        <h1 class="orbitron text-2xl font-bold tracking-widest">J.A.R.V.I.S.</h1>
+        
+        <div id="transcript" class="text-center italic text-sm opacity-70 h-8">
+            "Awaiting command, Sir."
+        </div>
+
+        <div class="w-full">
+            <div class="glass-panel p-4 h-40 overflow-y-auto scroll-hide flex flex-col-reverse mb-4" id="log-container">
+                <div id="response-text"></div>
+            </div>
+
+            <div class="flex flex-col gap-3">
+                <div class="flex gap-2">
+                    <input type="text" id="manualInput" placeholder="Type command here..." class="input-jarvis">
+                    <button id="btnSend" class="btn-jarvis orbitron">Send</button>
+                </div>
+                <div class="flex gap-2 justify-center">
+                    <button id="btnTalk" class="btn-jarvis orbitron">Voice Mode</button>
+                    <button id="btnClear" class="btn-jarvis orbitron">Clear</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- CONFIGURATION ---
+        // Provided API Key
+        const apiKey = "AIzaSyBOjq2a_bUufFwZI3rnAxrLngved-secNs"; 
+        
+        const arcContainer = document.getElementById('arcTrigger');
+        const transcriptEl = document.getElementById('transcript');
+        const responseText = document.getElementById('response-text');
+        const logContainer = document.getElementById('log-container');
+        const manualInput = document.getElementById('manualInput');
+        const btnSend = document.getElementById('btnSend');
+        const btnTalk = document.getElementById('btnTalk');
+
+        // --- Clock ---
+        setInterval(() => {
+            document.getElementById('clock').innerText = new Date().toLocaleTimeString();
+        }, 1000);
+
+        // --- Speech Recognition ---
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        let recognition;
+        let isListening = false;
+
+        if (SpeechRecognition) {
+            recognition = new SpeechRecognition();
+            recognition.continuous = false;
+            recognition.interimResults = false;
+
+            recognition.onstart = () => {
+                isListening = true;
+                arcContainer.classList.add('listening');
+                transcriptEl.innerText = "Listening...";
+            };
+
+            recognition.onresult = (event) => {
+                const result = event.results[0][0].transcript;
+                transcriptEl.innerText = `"${result}"`;
+                processCommand(result);
+            };
+
+            recognition.onend = () => {
+                isListening = false;
+                arcContainer.classList.remove('listening');
+            };
+
+            recognition.onerror = (e) => {
+                console.error(e);
+                if (e.error === 'not-allowed') {
+                    addLog("System Error", "Microphone access denied. Please run this on a local server or enable permissions.");
+                }
+            };
+        }
+
+        // --- Output ---
+        function speak(text) {
+            if (!text) return;
+            window.speechSynthesis.cancel();
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.rate = 1.0;
+            utterance.pitch = 0.95;
+            window.speechSynthesis.speak(utterance);
+            addLog("JARVIS", text);
+        }
+
+        function addLog(sender, text) {
+            const div = document.createElement('div');
+            div.className = 'mb-3 border-l border-cyan-500/50 pl-3 py-1';
+            div.innerHTML = `<span class="text-[9px] block opacity-40 orbitron">${sender}</span><p class="text-sm">${text}</p>`;
+            responseText.appendChild(div);
+            logContainer.scrollTop = logContainer.scrollHeight;
+        }
+
+        // --- Logic ---
+        async function processCommand(cmd) {
+            const input = cmd.toLowerCase();
+            
+            if (input.includes('time')) {
+                speak(`It is currently ${new Date().toLocaleTimeString()}, Sir.`);
+                return;
+            }
+            if (input.includes('google')) {
+                speak("Opening Google for you.");
+                window.open('https://www.google.com', '_blank');
+                return;
+            }
+
+            // AI Fallback
+            if (apiKey) {
+                await getAIResponse(cmd);
+            } else {
+                speak("Sir, I am running in basic local mode. To enable my full intelligence, please provide an API key in the source code.");
+            }
+        }
+
+        async function getAIResponse(prompt) {
+            try {
+                const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contents: [{ parts: [{ text: prompt }] }],
+                        systemInstruction: { parts: [{ text: "You are JARVIS. Be brief, helpful, and call the user Sir." }] }
+                    })
+                });
+                const data = await res.json();
+                const reply = data.candidates[0].content.parts[0].text;
+                speak(reply);
+            } catch (err) {
+                speak("I encountered an error communicating with my neural network.");
+            }
+        }
+
+        // --- Events ---
+        btnTalk.addEventListener('click', () => {
+            if (SpeechRecognition) {
+                recognition.start();
+            } else {
+                addLog("System", "Speech recognition not supported in this browser.");
+            }
+        });
+
+        btnSend.addEventListener('click', () => {
+            const val = manualInput.value.trim();
+            if (val) {
+                processCommand(val);
+                manualInput.value = '';
+            }
+        });
+
+        manualInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') btnSend.click();
+        });
+
+        document.getElementById('btnClear').addEventListener('click', () => {
+            responseText.innerHTML = '';
+            transcriptEl.innerText = "Log cleared.";
+        });
+
+        window.onload = () => {
+            setTimeout(() => speak("Systems initialized. Standing by."), 500);
+        };
+    </script>
+</body>
+</html>
