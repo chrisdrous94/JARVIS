@@ -162,15 +162,15 @@
         <div class="text-right flex flex-col gap-1">
             <div>ENGINE: <span class="text-cyan-400">GROQ_LLAMA_3.3</span></div>
             <div>UPLINK: <span id="uplink-status">STABLE</span></div>
-            <div>MEDIA_OUT: <span class="text-cyan-400 font-bold tracking-tighter">YOUTUBE_REDIRECT</span></div>
+            <div>MEDIA_OUT: <span class="text-cyan-400 font-bold tracking-tighter">YT_PROTOCOL_ACTIVE</span></div>
         </div>
     </div>
 
     <!-- API Setup Modal -->
     <div id="api-setup" class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm hidden">
-        <div id="api-modal" class="w-full max-md p-8 rounded-xl orbitron text-center">
+        <div id="api-modal" class="w-full max-w-md p-8 rounded-xl orbitron text-center">
             <h2 class="text-xl font-bold mb-4 tracking-widest">NEURAL LINK REQUIRED</h2>
-            <p class="text-[10px] opacity-60 mb-6 leading-relaxed">SIR, PLEASE PROVIDE YOUR GROQ API KEY TO INITIALIZE THE COGNITIVE ENGINE. THIS WILL BE STORED LOCALLY ON YOUR DEVICE.</p>
+            <p class="text-[10px] opacity-60 mb-6 leading-relaxed">SIR, PLEASE PROVIDE YOUR GROQ API KEY TO INITIALIZE THE COGNITIVE ENGINE.</p>
             <input type="password" id="apiKeyInput" placeholder="Paste gsk_ key here..." 
                    class="w-full bg-black/50 border border-cyan-500/50 p-3 mb-6 text-sm outline-none focus:border-cyan-400 text-cyan-400 text-center">
             <button id="saveKeyBtn" class="btn-action w-full">Initialize Systems</button>
@@ -187,7 +187,7 @@
         
         <div class="text-center">
             <h1 class="orbitron text-2xl font-bold tracking-[0.3em] mb-1">J.A.R.V.I.S.</h1>
-            <p id="transcript" class="italic text-xs opacity-50 min-h-[1rem]">"Awaiting neural sync, Sir."</p>
+            <p id="transcript" class="italic text-xs opacity-50 min-h-[1rem]">"Standing by, Sir."</p>
         </div>
     </div>
 
@@ -201,13 +201,13 @@
         <!-- Music HUD -->
         <div class="hud-panel p-4 mb-4 orbitron">
             <div class="flex justify-between items-center mb-2">
-                <div class="text-[10px] tracking-widest opacity-60">YT_AUDIO_PROTOCOL_BETA</div>
-                <div class="text-[10px] opacity-60 tracking-widest uppercase">External Output</div>
+                <div class="text-[10px] tracking-widest opacity-60">YT_AUDIO_LINK</div>
+                <div id="popup-warning" class="text-[8px] text-red-500 hidden animate-pulse">POP-UP BLOCKED! ALLOW POPUPS</div>
             </div>
             <div class="flex items-center gap-4">
                 <div class="flex flex-col flex-grow">
-                    <span id="track-title" class="text-xs truncate w-48 text-white uppercase tracking-wider">No Media Selected</span>
-                    <span id="track-artist" class="text-[9px] opacity-50 uppercase tracking-tighter">Standby for Redirection</span>
+                    <span id="track-title" class="text-xs truncate w-48 text-white uppercase tracking-wider">Media Standby</span>
+                    <span id="track-artist" class="text-[9px] opacity-50 uppercase tracking-tighter">YouTube Redirection Ready</span>
                 </div>
                 <div class="flex gap-4">
                     <button id="prevTrack" class="hover:text-white transition-colors">
@@ -228,7 +228,7 @@
             <div class="flex gap-2">
                 <input type="text" id="commandInput" placeholder="Direct neural entry..." 
                        class="w-full bg-black/50 border-b border-cyan-500/30 p-2 text-sm outline-none focus:border-cyan-400 transition-colors text-cyan-400">
-                <button id="sendBtn" class="btn-action orbitron">Execute</button>
+                <button id="sendBtn" class="btn-action orbitron">Send</button>
             </div>
             <div class="flex flex-wrap justify-center gap-2">
                 <button id="voiceBtn" class="btn-action orbitron">Listen Once</button>
@@ -240,7 +240,7 @@
     </div>
 
     <script>
-        // --- CONFIGURATION ---
+        // --- SECURE CONFIGURATION ---
         let API_KEY = localStorage.getItem('jarvis_groq_key') || '';
         const MODEL_URL = "https://api.groq.com/openai/v1/chat/completions";
         
@@ -258,8 +258,9 @@
         const apiKeyInput = document.getElementById('apiKeyInput');
         const saveKeyBtn = document.getElementById('saveKeyBtn');
         const resetKeyBtn = document.getElementById('resetKeyBtn');
+        const popupWarning = document.getElementById('popup-warning');
 
-        // Music UI Elements
+        // Music UI
         const trackTitle = document.getElementById('track-title');
         const trackArtist = document.getElementById('track-artist');
         const playPauseBtn = document.getElementById('playPauseTrack');
@@ -269,39 +270,31 @@
         let isAlwaysListening = false;
         let isProcessing = false;
 
-        // --- YOUTUBE REDIRECTION LOGIC ---
+        // --- YOUTUBE LOGIC ---
         const playlist = [
             { title: "STARK_EXPO_MIX", url: "https://www.youtube.com/results?search_query=ac+dc+iron+man+soundtrack" },
-            { title: "INDUSTRIAL_CONSTRUCTION", url: "https://www.youtube.com/watch?v=D58T0_J1J3Y" },
+            { title: "INDUSTRIAL_CORE", url: "https://www.youtube.com/watch?v=D58T0_J1J3Y" },
             { title: "NEURAL_LINK_LOFI", url: "https://www.youtube.com/watch?v=jfKfPfyJRdk" }
         ];
         let currentTrackIndex = 0;
 
         function openYouTube(url, title = "YOUTUBE_OUTPUT") {
             trackTitle.innerText = title;
-            trackArtist.innerText = "REDIRECTED_TO_TAB";
+            trackArtist.innerText = "OPENING_TAB...";
             core.classList.add('playing');
-            window.open(url, '_blank');
+            
+            const win = window.open(url, '_blank');
+            if (!win) {
+                popupWarning.classList.remove('hidden');
+                addLog("SYSTEM", "Sir, your browser blocked the YouTube tab. Please allow popups.");
+            } else {
+                popupWarning.classList.add('hidden');
+            }
         }
 
-        function playDefaultMusic() {
-            openYouTube(playlist[currentTrackIndex].url, playlist[currentTrackIndex].title);
-        }
-
-        function playSpecificMusic(query) {
-            const searchUrl = `https://www.youtube.com/results?search_query=${encodeURIComponent(query)}`;
-            openYouTube(searchUrl, query.toUpperCase());
-        }
-
-        playPauseBtn.onclick = playDefaultMusic;
-        nextTrackBtn.onclick = () => {
-            currentTrackIndex = (currentTrackIndex + 1) % playlist.length;
-            playDefaultMusic();
-        };
-        prevTrackBtn.onclick = () => {
-            currentTrackIndex = (currentTrackIndex - 1 + playlist.length) % playlist.length;
-            playDefaultMusic();
-        };
+        playPauseBtn.onclick = () => openYouTube(playlist[currentTrackIndex].url, playlist[currentTrackIndex].title);
+        nextTrackBtn.onclick = () => { currentTrackIndex = (currentTrackIndex + 1) % playlist.length; openYouTube(playlist[currentTrackIndex].url, playlist[currentTrackIndex].title); };
+        prevTrackBtn.onclick = () => { currentTrackIndex = (currentTrackIndex - 1 + playlist.length) % playlist.length; openYouTube(playlist[currentTrackIndex].url, playlist[currentTrackIndex].title); };
 
         // --- HUD Clock ---
         setInterval(() => {
@@ -310,11 +303,8 @@
 
         // --- API KEY MANAGEMENT ---
         function checkApiKey() {
-            if (!API_KEY) {
-                apiSetup.classList.remove('hidden');
-            } else {
-                apiSetup.classList.add('hidden');
-            }
+            if (!API_KEY) apiSetup.classList.remove('hidden');
+            else apiSetup.classList.add('hidden');
         }
 
         saveKeyBtn.addEventListener('click', () => {
@@ -325,7 +315,7 @@
                 apiSetup.classList.add('hidden');
                 speak("Neural links established. Cogntive engine online, Sir.");
             } else {
-                alert("Invalid format. Key must start with 'gsk_'.");
+                alert("Invalid key format.");
             }
         });
 
@@ -361,7 +351,7 @@
                             addLog("USER", text);
                             handleInput(command);
                         } else {
-                            speak("Yes, Sir? Standing by for your request.");
+                            speak("Yes, Sir? Standing by.");
                         }
                     } else {
                         restartListening();
@@ -375,13 +365,14 @@
             recognizer.onend = () => {
                 core.classList.remove('listening');
                 statusTag.innerText = 'ONLINE';
-                if (isAlwaysListening && !isProcessing) {
-                    restartListening();
-                }
+                if (isAlwaysListening && !isProcessing) restartListening();
             };
 
             recognizer.onerror = (e) => {
-                console.error("Speech Error:", e.error);
+                if (e.error !== 'no-speech') {
+                    console.error("Speech Error:", e.error);
+                    addLog("MIC_ERROR", e.error);
+                }
                 if (isAlwaysListening) restartListening();
             };
         }
@@ -397,19 +388,13 @@
         function speak(text) {
             isProcessing = true;
             window.speechSynthesis.cancel();
-            
             const utterance = new SpeechSynthesisUtterance(text);
             const voices = window.speechSynthesis.getVoices();
             const jarvisVoice = voices.find(v => (v.name.includes('Google UK English Male') || v.lang === 'en-GB') && v.name.includes('Male')) || voices[0];
             if (jarvisVoice) utterance.voice = jarvisVoice;
-            
-            utterance.pitch = 0.9;
+            utterance.pitch = 0.95;
             utterance.rate = 1.0;
-            utterance.onend = () => {
-                isProcessing = false;
-                if (isAlwaysListening) restartListening();
-            };
-
+            utterance.onend = () => { isProcessing = false; if (isAlwaysListening) restartListening(); };
             window.speechSynthesis.speak(utterance);
             addLog("JARVIS", text);
         }
@@ -425,53 +410,24 @@
         async function handleInput(cmd) {
             const query = cmd.toLowerCase();
             
-            // YOUTUBE MUSIC COMMANDS
             if (query.includes('play music') || query.includes('start music')) {
-                if (query.length > 12) {
-                    const songName = query.replace('play music', '').replace('play', '').trim();
-                    playSpecificMusic(songName);
-                    speak(`Searching YouTube for ${songName}, Sir.`);
+                const song = query.replace('play music', '').replace('play', '').trim();
+                if (song) {
+                    const url = `https://www.youtube.com/results?search_query=${encodeURIComponent(song)}`;
+                    openYouTube(url, song.toUpperCase());
+                    speak(`Searching YouTube for ${song}, Sir.`);
                 } else {
-                    playDefaultMusic();
-                    speak("Opening the Stark Expo theme on YouTube.");
+                    openYouTube(playlist[currentTrackIndex].url, playlist[currentTrackIndex].title);
+                    speak("Initiating default Stark playlist.");
                 }
                 return;
             }
-            if (query.includes('play') && (query.includes('on youtube') || query.includes('youtube'))) {
-                const songName = query.replace('play', '').replace('on youtube', '').replace('youtube', '').trim();
-                playSpecificMusic(songName);
-                speak(`Redirecting to YouTube for ${songName}.`);
-                return;
-            }
-            if (query.includes('next song') || query.includes('next track')) {
-                currentTrackIndex = (currentTrackIndex + 1) % playlist.length;
-                playDefaultMusic();
-                speak("Skipping to the next YouTube track.");
-                return;
-            }
 
-            // SYSTEM COMMANDS
-            if (query.includes('time')) {
-                speak(`The time is precisely ${new Date().toLocaleTimeString()}, Sir.`);
-                return;
-            }
-            if (query.includes('open google')) {
-                speak("Initiating search protocol.");
-                window.open('https://google.com', '_blank');
-                return;
-            }
-            if (query.includes('stop listening')) {
-                toggleContinuous(false);
-                speak("Very well, Sir. Always-listening mode is now deactivated.");
-                return;
-            }
+            if (query.includes('time')) { speak(`The time is ${new Date().toLocaleTimeString()}, Sir.`); return; }
+            if (query.includes('open google')) { speak("Opening search protocols."); window.open('https://google.com', '_blank'); return; }
+            if (query.includes('stop listening')) { toggleContinuous(false); speak("Voice recognition suspended."); return; }
 
-            if (!API_KEY) {
-                speak("Sir, neural link credentials are required for cognitive processing.");
-                checkApiKey();
-                return;
-            }
-
+            if (!API_KEY) { speak("Neural credentials required."); checkApiKey(); return; }
             statusTag.innerText = 'THINKING';
             await callNeuralNetwork(cmd);
             statusTag.innerText = 'ONLINE';
@@ -481,42 +437,28 @@
             try {
                 const response = await fetch(MODEL_URL, {
                     method: 'POST',
-                    headers: { 
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${API_KEY}`
-                    },
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${API_KEY}` },
                     body: JSON.stringify({
                         model: "llama-3.3-70b-versatile",
                         messages: [
-                            { role: "system", content: "You are JARVIS. A sophisticated, brief, professional AI assistant. Address the user as Sir. Maintain an Iron Man HUD persona. Responses should be under 3 sentences." },
+                            { role: "system", content: "You are JARVIS. Sophisticated Stark Industries AI. Be brief, professional, call the user Sir." },
                             { role: "user", content: prompt }
-                        ],
-                        temperature: 0.6
+                        ]
                     })
                 });
-
-                if (!response.ok) {
-                    const error = await response.json();
-                    throw new Error(error.error?.message || "Uplink Failure");
-                }
-
+                if (!response.ok) throw new Error("Neural Uplink Failure");
                 const data = await response.json();
-                const reply = data.choices[0].message.content || "Connection lost, Sir.";
-                speak(reply);
+                speak(data.choices[0].message.content);
                 uplinkStatus.innerText = "STABLE";
-                uplinkStatus.className = "text-cyan-400";
             } catch (err) {
-                console.error(err);
-                addLog("ERROR", `Neural Error: ${err.message}`);
-                speak("I'm afraid the neural uplink has been disrupted, Sir.");
+                addLog("ERROR", err.message);
+                speak("I'm afraid the neural link has been disrupted, Sir.");
                 uplinkStatus.innerText = "ERROR";
-                uplinkStatus.className = "text-red-500";
             }
         }
 
         function toggleContinuous(force) {
             isAlwaysListening = force !== undefined ? force : !isAlwaysListening;
-            
             if (isAlwaysListening) {
                 continuousBtn.classList.add('btn-active');
                 wakeStatus.innerText = 'ACTIVE';
@@ -530,45 +472,13 @@
             }
         }
 
-        voiceBtn.addEventListener('click', () => {
-            isAlwaysListening = false;
-            continuousBtn.classList.remove('btn-active');
-            if (recognizer) {
-                try { recognizer.start(); } catch(e) {}
-            }
-        });
+        voiceBtn.onclick = () => { isAlwaysListening = false; toggleContinuous(false); recognizer.start(); };
+        continuousBtn.onclick = () => toggleContinuous();
+        sendBtn.onclick = () => { const val = commandInput.value.trim(); if (val) { addLog("USER", val); handleInput(val); commandInput.value = ''; } };
+        commandInput.onkeypress = (e) => { if (e.key === 'Enter') sendBtn.click(); };
+        resetBtn.onclick = () => { msgBuffer.innerHTML = ''; transcript.innerText = '"HUD reset."'; };
 
-        continuousBtn.addEventListener('click', () => toggleContinuous());
-
-        core.addEventListener('click', () => {
-            if (!isAlwaysListening) voiceBtn.click();
-            else toggleContinuous(false);
-        });
-
-        document.getElementById('sendBtn').addEventListener('click', () => {
-            const val = commandInput.value.trim();
-            if (val) {
-                addLog("USER", val);
-                handleInput(val);
-                commandInput.value = '';
-            }
-        });
-
-        commandInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') document.getElementById('sendBtn').click();
-        });
-
-        document.getElementById('resetBtn').addEventListener('click', () => {
-            msgBuffer.innerHTML = '';
-            transcript.innerText = '"HUD reset complete."';
-        });
-
-        window.onload = () => {
-            checkApiKey();
-            setTimeout(() => {
-                if (API_KEY) speak("Systems stabilized. YouTube audio protocols active. Standing by for your command, Sir.");
-            }, 800);
-        };
+        window.onload = () => { checkApiKey(); setTimeout(() => { if (API_KEY) speak("Systems initialized. Standby for command."); }, 800); };
     </script>
 </body>
 </html>
