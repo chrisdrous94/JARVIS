@@ -36,7 +36,6 @@
 
         .orbitron { font-family: 'Orbitron', sans-serif; }
 
-        /* Arc Reactor Visualizer */
         .arc-reactor {
             position: relative;
             width: 160px;
@@ -100,7 +99,6 @@
         }
 
         .terminal-log::-webkit-scrollbar { width: 4px; }
-        .terminal-log::-webkit-scrollbar-track { background: transparent; }
         .terminal-log::-webkit-scrollbar-thumb { background: var(--jarvis-blue); border-radius: 10px; }
 
         .btn-action {
@@ -136,6 +134,12 @@
             animation: scan 8s linear infinite;
         }
 
+        #api-modal {
+            background: rgba(5, 10, 15, 0.95);
+            border: 1px solid var(--jarvis-blue);
+            box-shadow: 0 0 50px rgba(0, 210, 255, 0.3);
+        }
+
         @keyframes scan { 0% { top: -10%; } 100% { top: 110%; } }
     </style>
 </head>
@@ -150,9 +154,20 @@
             <div>WAKE-WORD: <span id="wake-status" class="text-red-500 font-bold">DISABLED</span></div>
         </div>
         <div class="text-right flex flex-col gap-1">
-            <div>V: 5.2.0-STABLE</div>
-            <div>UPLINK: <span id="uplink-status">ACTIVE</span></div>
-            <div>MODE: <span id="mode-text">MANUAL</span></div>
+            <div>ENGINE: <span class="text-cyan-400">GROQ_LLAMA_3.1</span></div>
+            <div>UPLINK: <span id="uplink-status">STABLE</span></div>
+            <div>DEPLOYMENT: <span class="text-cyan-400">VERCEL_SAFE</span></div>
+        </div>
+    </div>
+
+    <!-- API Setup Modal (Shown if key is missing) -->
+    <div id="api-setup" class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm hidden">
+        <div id="api-modal" class="w-full max-w-md p-8 rounded-xl orbitron text-center">
+            <h2 class="text-xl font-bold mb-4 tracking-widest">NEURAL LINK REQUIRED</h2>
+            <p class="text-[10px] opacity-60 mb-6 leading-relaxed">SIR, PLEASE PROVIDE YOUR GROQ API KEY TO INITIALIZE THE COGNITIVE ENGINE. THIS WILL BE STORED LOCALLY ON YOUR DEVICE.</p>
+            <input type="password" id="apiKeyInput" placeholder="Paste gsk_ key here..." 
+                   class="w-full bg-black/50 border border-cyan-500/50 p-3 mb-6 text-sm outline-none focus:border-cyan-400 text-cyan-400 text-center">
+            <button id="saveKeyBtn" class="btn-action w-full">Initialize Systems</button>
         </div>
     </div>
 
@@ -166,11 +181,11 @@
         
         <div class="text-center">
             <h1 class="orbitron text-2xl font-bold tracking-[0.3em] mb-1">J.A.R.V.I.S.</h1>
-            <p id="transcript" class="italic text-xs opacity-50 min-h-[1rem]">"Standing by, Sir."</p>
+            <p id="transcript" class="italic text-xs opacity-50 min-h-[1rem]">"Standing by for instructions, Sir."</p>
         </div>
     </div>
 
-    <!-- UI Interface -->
+    <!-- Command Console Area -->
     <div class="w-full max-w-xl px-2">
         <div class="hud-panel p-4 mb-4 h-48 overflow-y-auto terminal-log flex flex-col-reverse" id="chatWindow">
             <div id="msgBuffer"></div>
@@ -180,24 +195,25 @@
             <div class="flex gap-2">
                 <input type="text" id="commandInput" placeholder="Direct neural entry..." 
                        class="w-full bg-black/50 border-b border-cyan-500/30 p-2 text-sm outline-none focus:border-cyan-400 transition-colors text-cyan-400">
-                <button id="sendBtn" class="btn-action orbitron">Send</button>
+                <button id="sendBtn" class="btn-action orbitron">Execute</button>
             </div>
             <div class="flex flex-wrap justify-center gap-2">
                 <button id="voiceBtn" class="btn-action orbitron">Listen Once</button>
                 <button id="continuousBtn" class="btn-action orbitron">Always Listening</button>
-                <button id="resetBtn" class="btn-action orbitron opacity-50">Clear</button>
+                <button id="resetKeyBtn" class="btn-action orbitron opacity-40">Change Key</button>
+                <button id="resetBtn" class="btn-action orbitron opacity-50">Clear HUD</button>
             </div>
         </div>
     </div>
 
     <script>
-        const API_KEY = "AIzaSyBOjq2a_bUufFwZI3rnAxrLngved-secNs";
-        const MODEL_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`;
+        // --- SECURE CONFIGURATION ---
+        let API_KEY = localStorage.getItem('jarvis_groq_key') || '';
+        const MODEL_URL = "https://api.groq.com/openai/v1/chat/completions";
         
         const core = document.getElementById('mainCore');
         const statusTag = document.getElementById('status-tag');
         const wakeStatus = document.getElementById('wake-status');
-        const modeText = document.getElementById('mode-text');
         const transcript = document.getElementById('transcript');
         const msgBuffer = document.getElementById('msgBuffer');
         const chatWindow = document.getElementById('chatWindow');
@@ -205,14 +221,44 @@
         const voiceBtn = document.getElementById('voiceBtn');
         const continuousBtn = document.getElementById('continuousBtn');
         const uplinkStatus = document.getElementById('uplink-status');
+        const apiSetup = document.getElementById('api-setup');
+        const apiKeyInput = document.getElementById('apiKeyInput');
+        const saveKeyBtn = document.getElementById('saveKeyBtn');
+        const resetKeyBtn = document.getElementById('resetKeyBtn');
 
         let isAlwaysListening = false;
         let isProcessing = false;
 
-        // --- HUD Clock ---
         setInterval(() => {
             document.getElementById('clock').innerText = `TIME: ${new Date().toLocaleTimeString()}`;
         }, 1000);
+
+        // --- API KEY MANAGEMENT ---
+        function checkApiKey() {
+            if (!API_KEY) {
+                apiSetup.classList.remove('hidden');
+            } else {
+                apiSetup.classList.add('hidden');
+            }
+        }
+
+        saveKeyBtn.addEventListener('click', () => {
+            const val = apiKeyInput.value.trim();
+            if (val.startsWith('gsk_')) {
+                localStorage.setItem('jarvis_groq_key', val);
+                API_KEY = val;
+                apiSetup.classList.add('hidden');
+                speak("Neural links established. Cogntive engine online, Sir.");
+            } else {
+                alert("Invalid format. Key must start with 'gsk_'.");
+            }
+        });
+
+        resetKeyBtn.addEventListener('click', () => {
+            localStorage.removeItem('jarvis_groq_key');
+            API_KEY = '';
+            checkApiKey();
+        });
 
         // --- Speech Recognition ---
         const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -240,7 +286,7 @@
                             addLog("USER", text);
                             handleInput(command);
                         } else {
-                            speak("Yes, Sir? Standing by.");
+                            speak("Yes, Sir? Standing by for your request.");
                         }
                     } else {
                         restartListening();
@@ -260,7 +306,7 @@
             };
 
             recognizer.onerror = (e) => {
-                console.error("Speech Rec Error:", e.error);
+                console.error("Speech Error:", e.error);
                 if (isAlwaysListening) restartListening();
             };
         }
@@ -269,23 +315,21 @@
             if (isAlwaysListening && !isProcessing) {
                 setTimeout(() => {
                     try { recognizer.start(); } catch(e) {}
-                }, 350);
+                }, 400);
             }
         }
 
-        // --- Speech Synthesis ---
         function speak(text) {
             isProcessing = true;
             window.speechSynthesis.cancel();
             
             const utterance = new SpeechSynthesisUtterance(text);
             const voices = window.speechSynthesis.getVoices();
-            const preferred = voices.find(v => (v.name.includes('Google UK English Male') || v.lang === 'en-GB') && v.name.includes('Male')) || voices[0];
-            if (preferred) utterance.voice = preferred;
+            const jarvisVoice = voices.find(v => (v.name.includes('Google UK English Male') || v.lang === 'en-GB') && v.name.includes('Male')) || voices[0];
+            if (jarvisVoice) utterance.voice = jarvisVoice;
             
             utterance.pitch = 0.9;
             utterance.rate = 1.0;
-
             utterance.onend = () => {
                 isProcessing = false;
                 if (isAlwaysListening) restartListening();
@@ -305,19 +349,24 @@
 
         async function handleInput(cmd) {
             const query = cmd.toLowerCase();
-
             if (query.includes('time')) {
-                speak(`The time is ${new Date().toLocaleTimeString()}, Sir.`);
+                speak(`The time is precisely ${new Date().toLocaleTimeString()}, Sir.`);
                 return;
             }
             if (query.includes('open google')) {
-                speak("Opening Google search, Sir.");
+                speak("Initiating search protocol.");
                 window.open('https://google.com', '_blank');
                 return;
             }
             if (query.includes('stop listening')) {
                 toggleContinuous(false);
-                speak("Always-listening mode deactivated.");
+                speak("Very well, Sir. Always-listening mode is now deactivated.");
+                return;
+            }
+
+            if (!API_KEY) {
+                speak("Sir, neural link credentials are required for cognitive processing.");
+                checkApiKey();
                 return;
             }
 
@@ -330,25 +379,34 @@
             try {
                 const response = await fetch(MODEL_URL, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${API_KEY}`
+                    },
                     body: JSON.stringify({
-                        contents: [{ parts: [{ text: prompt }] }],
-                        systemInstruction: { parts: [{ text: "You are JARVIS. Sophisticated, brief, professional. Address user as Sir." }] }
+                        model: "llama-3.1-70b-versatile",
+                        messages: [
+                            { role: "system", content: "You are JARVIS. A sophisticated, brief, professional AI assistant. Address the user as Sir. Maintain an Iron Man HUD persona. Responses should be under 3 sentences." },
+                            { role: "user", content: prompt }
+                        ],
+                        temperature: 0.6
                     })
                 });
 
                 if (!response.ok) {
                     const error = await response.json();
-                    throw new Error(error.error?.message || `Status ${response.status}`);
+                    throw new Error(error.error?.message || "Uplink Failure");
                 }
 
                 const data = await response.json();
-                const reply = data.candidates?.[0]?.content?.parts?.[0]?.text || "Signal disrupted, Sir.";
+                const reply = data.choices[0].message.content || "Connection lost, Sir.";
                 speak(reply);
+                uplinkStatus.innerText = "STABLE";
+                uplinkStatus.className = "text-cyan-400";
             } catch (err) {
                 console.error(err);
                 addLog("ERROR", `Neural Error: ${err.message}`);
-                speak("I'm having trouble with the neural link, Sir. Please check the logs.");
+                speak("I'm afraid the neural uplink has been disrupted, Sir.");
                 uplinkStatus.innerText = "ERROR";
                 uplinkStatus.className = "text-red-500";
             }
@@ -361,13 +419,11 @@
                 continuousBtn.classList.add('btn-active');
                 wakeStatus.innerText = 'ACTIVE';
                 wakeStatus.className = 'text-green-400 font-bold';
-                modeText.innerText = 'VOICE_CONV';
                 try { recognizer.start(); } catch(e) {}
             } else {
                 continuousBtn.classList.remove('btn-active');
                 wakeStatus.innerText = 'DISABLED';
                 wakeStatus.className = 'text-red-500 font-bold';
-                modeText.innerText = 'MANUAL';
                 try { recognizer.stop(); } catch(e) {}
             }
         }
@@ -406,8 +462,9 @@
         });
 
         window.onload = () => {
+            checkApiKey();
             setTimeout(() => {
-                speak("Systems stabilized. Standing by for commands.");
+                if (API_KEY) speak("Systems stabilized. Vercel deployment verified. Standing by for instructions, Sir.");
             }, 800);
         };
     </script>
