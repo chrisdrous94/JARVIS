@@ -51,6 +51,8 @@
             align-items: center;
             justify-content: center;
             flex-shrink: 0;
+            margin-top: 1rem;
+            margin-bottom: 1.5rem;
         }
 
         .timer-svg {
@@ -78,6 +80,8 @@
             transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
 
+        .arc-reactor:hover { transform: scale(1.05); }
+
         .ring {
             position: absolute;
             top: 50%;
@@ -104,6 +108,7 @@
         @keyframes rotate-counter { from { transform: translate(-50%, -50%) rotate(360deg); } to { transform: translate(-50%, -50%) rotate(0deg); } }
         @keyframes pulse { 0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 0.8; } 50% { transform: translate(-50%, -50%) scale(1.2); opacity: 1; } }
 
+        /* Panels & Inputs */
         .hud-panel {
             background: rgba(0, 210, 255, 0.05);
             border: 1px solid rgba(0, 210, 255, 0.2);
@@ -111,35 +116,8 @@
             border-radius: 12px;
         }
 
-        /* News Ticker */
-        .news-ticker {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            width: 100%;
-            background: rgba(0, 0, 0, 0.8);
-            border-top: 1px solid var(--jarvis-blue);
-            height: 30px;
-            overflow: hidden;
-            display: flex;
-            align-items: center;
-            z-index: 100;
-        }
-
-        .ticker-content {
-            display: inline-block;
-            white-space: nowrap;
-            padding-left: 100%;
-            animation: ticker 30s linear infinite;
-            font-size: 10px;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-        }
-
-        @keyframes ticker {
-            0% { transform: translate3d(0, 0, 0); }
-            100% { transform: translate3d(-100%, 0, 0); }
-        }
+        .terminal-log::-webkit-scrollbar { width: 4px; }
+        .terminal-log::-webkit-scrollbar-thumb { background: var(--jarvis-blue); border-radius: 10px; }
 
         .btn-action {
             border: 1px solid var(--jarvis-blue);
@@ -149,25 +127,35 @@
             letter-spacing: 1.5px;
             font-size: 0.65rem;
             background: rgba(0, 0, 0, 0.4);
+            white-space: nowrap;
         }
-
         .btn-action:hover { background: var(--jarvis-blue); color: var(--bg-dark); box-shadow: 0 0 15px var(--jarvis-blue); }
-
-        #api-modal {
-            background: rgba(5, 10, 15, 0.95);
-            border: 1px solid var(--jarvis-blue);
-            box-shadow: 0 0 50px rgba(0, 210, 255, 0.3);
-        }
+        .btn-active { background: var(--jarvis-blue) !important; color: var(--bg-dark) !important; }
 
         .scanline { width: 100%; height: 2px; background: rgba(0, 210, 255, 0.1); position: fixed; top: 0; z-index: 100; pointer-events: none; animation: scan 8s linear infinite; }
         @keyframes scan { 0% { top: -10%; } 100% { top: 110%; } }
+
+        /* News Ticker */
+        .news-ticker {
+            position: fixed; bottom: 0; left: 0; width: 100%;
+            background: rgba(0, 0, 0, 0.8); border-top: 1px solid var(--jarvis-blue);
+            height: 30px; overflow: hidden; display: flex; align-items: center; z-index: 100;
+        }
+        .ticker-content {
+            display: inline-block; white-space: nowrap; padding-left: 100%;
+            animation: ticker 30s linear infinite; font-size: 10px; text-transform: uppercase; letter-spacing: 2px;
+        }
+        @keyframes ticker { 0% { transform: translate3d(0, 0, 0); } 100% { transform: translate3d(-100%, 0, 0); } }
+
+        .yt-link { color: #fff; text-decoration: underline; text-shadow: 0 0 5px var(--jarvis-blue); cursor: pointer; }
+        .reminder-tag { background: rgba(0, 210, 255, 0.1); border: 1px solid rgba(0, 210, 255, 0.3); font-size: 9px; padding: 2px 6px; margin: 2px; display: inline-flex; align-items: center; border-radius: 4px; }
     </style>
 </head>
 <body class="p-4" id="main-body">
     <div class="scanline"></div>
 
     <!-- HUD Overlay -->
-    <div class="fixed top-4 left-4 right-4 flex justify-between orbitron text-[9px] opacity-70 tracking-widest z-50">
+    <div class="fixed top-4 left-4 right-4 flex justify-between orbitron text-[9px] opacity-70 tracking-widest z-50 pointer-events-none">
         <div class="flex flex-col gap-1">
             <div>STATUS: <span id="status-tag" class="text-green-400 font-bold">ONLINE</span></div>
             <div id="clock">TIME: --:--:--</div>
@@ -177,22 +165,24 @@
         <div class="text-right flex flex-col gap-1">
             <div>HW_BRIDGE: <span id="bridge-status" class="text-green-400">ACTIVE</span></div>
             <div>BATTERY: <span id="battery-status">--%</span></div>
-            <div>MODE: <span id="mode-text">STANDARD_OS</span></div>
+            <div>NETWORK: <span id="network-status">CONNECTED</span></div>
+            <div>MODE: <span id="mode-text" class="font-bold">STANDARD_OS</span></div>
         </div>
     </div>
 
-    <!-- API Setup -->
+    <!-- API Setup Modal -->
     <div id="api-setup" class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm hidden">
-        <div id="api-modal" class="w-full max-w-md p-8 rounded-xl orbitron text-center">
+        <div class="w-full max-w-md p-8 rounded-xl orbitron text-center bg-gray-900 border border-cyan-500 shadow-[0_0_50px_rgba(0,210,255,0.3)]">
             <h2 class="text-xl font-bold mb-4 tracking-widest">NEURAL LINK REQUIRED</h2>
-            <input type="password" id="apiKeyInput" placeholder="Paste Groq gsk_ key..." 
+            <p class="text-[10px] opacity-60 mb-6 leading-relaxed">SIR, PLEASE PROVIDE YOUR GROQ API KEY TO INITIALIZE THE COGNITIVE ENGINE.</p>
+            <input type="password" id="apiKeyInput" placeholder="Paste gsk_ key here..." 
                    class="w-full bg-black/50 border border-cyan-500/50 p-3 mb-6 text-sm outline-none focus:border-cyan-400 text-cyan-400 text-center">
             <button id="saveKeyBtn" class="btn-action w-full">Initialize Systems</button>
         </div>
     </div>
 
-    <!-- Visual Core -->
-    <div class="reactor-container mt-12 mb-6">
+    <!-- Main Visual -->
+    <div class="reactor-container">
         <svg class="timer-svg" width="200" height="200">
             <circle class="timer-circle" cx="100" cy="100" r="90" id="timer-ring"></circle>
         </svg>
@@ -205,44 +195,80 @@
 
     <div class="text-center mb-6">
         <h1 class="orbitron text-2xl font-bold tracking-[0.3em] mb-1">J.A.R.V.I.S.</h1>
-        <p id="transcript" class="italic text-xs opacity-50 min-h-[1rem]">"Data streams active, Sir."</p>
+        <p id="transcript" class="italic text-xs opacity-50 min-h-[1rem]">"All systems functional, Sir."</p>
     </div>
 
-    <!-- UI Matrix -->
-    <div class="w-full max-w-2xl px-2 grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div class="hud-panel p-4 h-48 overflow-y-auto terminal-log flex flex-col-reverse" id="chatWindow">
-            <div id="msgBuffer"></div>
+    <!-- UI Matrix Grid -->
+    <div class="w-full max-w-4xl px-2 grid grid-cols-1 md:grid-cols-2 gap-4">
+        
+        <!-- Left Column: Terminal & Controls -->
+        <div class="flex flex-col gap-4">
+            <!-- Terminal Log -->
+            <div class="hud-panel p-4 h-64 overflow-y-auto terminal-log flex flex-col-reverse" id="chatWindow">
+                <div id="msgBuffer"></div>
+            </div>
+
+            <!-- Command Input -->
+            <div class="flex gap-2">
+                <input type="text" id="commandInput" placeholder="Neural Matrix Entry..." 
+                       class="w-full bg-black/50 border border-cyan-500/30 p-2 text-sm outline-none focus:border-cyan-400 text-cyan-400 rounded">
+                <button id="sendBtn" class="btn-action orbitron rounded">Execute</button>
+            </div>
+            
+            <!-- Voice Controls -->
+            <div class="flex flex-wrap justify-center gap-2">
+                <button id="voiceBtn" class="btn-action orbitron rounded flex-grow">Listen</button>
+                <button id="continuousBtn" class="btn-action orbitron rounded flex-grow">Neural Loop</button>
+                <button id="resetKeyBtn" class="btn-action orbitron opacity-40 rounded">Reset Auth</button>
+                <button id="resetBtn" class="btn-action orbitron opacity-40 rounded">Clear Log</button>
+            </div>
         </div>
 
+        <!-- Right Column: Widgets -->
         <div class="flex flex-col gap-4">
-            <div class="hud-panel p-3 orbitron">
-                <div class="text-[8px] opacity-60 mb-2">NEURAL_REGISTRY</div>
-                <div id="reminder-list" class="flex flex-wrap gap-1">
+            <!-- Music Protocol -->
+            <div class="hud-panel p-4 orbitron">
+                <div class="flex justify-between items-center mb-2">
+                    <div class="text-[10px] tracking-widest opacity-60">YT_AUDIO_PROTOCOL</div>
+                    <div id="popup-warning" class="text-[8px] text-red-500 hidden animate-pulse">POP-UP BLOCKED!</div>
+                </div>
+                <div class="flex items-center gap-4">
+                    <div class="flex flex-col flex-grow">
+                        <span id="track-title" class="text-xs truncate w-40 text-white uppercase tracking-wider">Media Standby</span>
+                        <span id="track-artist" class="text-[9px] opacity-50 uppercase tracking-tighter">YouTube Interface</span>
+                    </div>
+                    <div class="flex gap-3">
+                        <button id="prevTrack" class="hover:text-white transition-colors">
+                            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M6 6h2v12H6zm3.5 6L18 18V6z"/></svg>
+                        </button>
+                        <button id="playPauseTrack" class="hover:text-white transition-colors">
+                            <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                        </button>
+                        <button id="nextTrack" class="hover:text-white transition-colors">
+                            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Neural Reminders -->
+            <div class="hud-panel p-4 orbitron flex-grow">
+                <div class="flex justify-between items-center mb-3">
+                    <div class="text-[10px] tracking-widest opacity-60">NEURAL_REGISTRY (TASKS)</div>
+                    <button id="purgeCacheBtn" class="text-[8px] opacity-40 hover:opacity-100 transition-opacity">PURGE</button>
+                </div>
+                <div id="reminder-list" class="flex flex-wrap gap-1 min-h-[50px] content-start">
                     <span class="opacity-30 text-[10px]">Registry Empty.</span>
                 </div>
             </div>
 
-            <div class="hud-panel p-3 orbitron">
-                <div class="flex justify-between items-center text-[8px] opacity-60 mb-1">
-                    <span>AUDIO_OUTPUT</span>
-                    <span id="vol-display">VOL: 80%</span>
+            <!-- Volume Hardware Bridge -->
+            <div class="hud-panel p-4 orbitron">
+                <div class="flex justify-between items-center text-[10px] opacity-60 mb-2">
+                    <span>AUDIO_OUTPUT_LEVEL</span>
+                    <span id="vol-display">80%</span>
                 </div>
-                <input type="range" id="vol-slider" class="w-full h-1 bg-cyan-900 rounded-lg appearance-none cursor-pointer accent-cyan-400">
-            </div>
-        </div>
-
-        <!-- Controls -->
-        <div class="md:col-span-2 flex flex-col gap-3">
-            <div class="flex gap-2">
-                <input type="text" id="commandInput" placeholder="Neural Matrix Entry..." 
-                       class="w-full bg-black/50 border-b border-cyan-500/30 p-2 text-sm outline-none focus:border-cyan-400 text-cyan-400">
-                <button id="sendBtn" class="btn-action orbitron">Execute</button>
-            </div>
-            <div class="flex flex-wrap justify-center gap-2">
-                <button id="voiceBtn" class="btn-action orbitron">Single Link</button>
-                <button id="continuousBtn" class="btn-action orbitron">Neural Loop</button>
-                <button id="resetKeyBtn" class="btn-action orbitron opacity-40">Auth Reset</button>
-                <button id="resetBtn" class="btn-action orbitron opacity-50">Purge HUD</button>
+                <input type="range" id="vol-slider" class="w-full h-1 bg-cyan-900 rounded-lg appearance-none cursor-pointer accent-cyan-400" value="80">
             </div>
         </div>
     </div>
@@ -250,118 +276,312 @@
     <!-- Global News Ticker -->
     <div class="news-ticker orbitron">
         <div class="ticker-content" id="news-content">
-            INITIALIZING NEWS UPLINK... STANDBY... GLOBAL HEADLINES LOADING... MARKET DATA SYNCING...
+            INITIALIZING NEWS UPLINK... STANDBY...
         </div>
     </div>
 
     <script>
-        // --- CORE CONFIG ---
+        // ======================================================================
+        // SYSTEM CONFIGURATION & GLOBAL VARIABLES
+        // ======================================================================
         let API_KEY = localStorage.getItem('jarvis_groq_key') || '';
         const MODEL_URL = "https://api.groq.com/openai/v1/chat/completions";
         
-        const core = document.getElementById('mainCore');
-        const transcript = document.getElementById('transcript');
-        const msgBuffer = document.getElementById('msgBuffer');
-        const chatWindow = document.getElementById('chatWindow');
-        const commandInput = document.getElementById('commandInput');
-        const apiSetup = document.getElementById('api-setup');
-        const reminderListEl = document.getElementById('reminder-list');
-        const timerRing = document.getElementById('timer-ring');
-        const newsContent = document.getElementById('news-content');
-        const volSlider = document.getElementById('vol-slider');
-
+        // State
         let isAlwaysListening = false;
         let isProcessing = false;
-        let reminders = JSON.parse(localStorage.getItem('jarvis_reminders')) || [];
         let activeTimer = null;
+        let currentWeatherData = { temp: null, aqi: null, aqiDesc: "Unknown" };
+        let reminders = JSON.parse(localStorage.getItem('jarvis_reminders')) || [];
+        let currentTrackIndex = 0;
+        let systemVolume = 0.8; // Default 80%
 
-        // --- PROTOCOL 1: NEWS UPLINK ---
-        async function updateNews() {
-            try {
-                // Using a fallback mock for demo, or a real fetch if needed
-                const feeds = [
-                    "STARK INDUSTRIES STOCK UP 4.2% AFTER CLEAN ENERGY BREAKTHROUGH",
-                    "AVENGERS INITIATIVE STATUS: MONITORING GLOBAL THREATS",
-                    "NEW EXOPLANET DISCOVERED IN SECTOR 7G",
-                    "CYBERNETIC INTERFACE REACHES 99.9% SYNCHRONICITY",
-                    "WEATHER ALERT: IONIC STORM APPROACHING CENTRAL HUB"
-                ];
-                newsContent.innerText = feeds.join(" | ") + " | " + feeds[0];
-            } catch(e) { newsContent.innerText = "NEWS UPLINK ERROR: SIGNAL LOST"; }
+        const playlist = [
+            { title: "STARK_EXPO_MIX", url: "https://www.youtube.com/results?search_query=ac+dc+iron+man+soundtrack" },
+            { title: "INDUSTRIAL_CORE", url: "https://www.youtube.com/watch?v=D58T0_J1J3Y" },
+            { title: "NEURAL_LOFI", url: "https://www.youtube.com/watch?v=jfKfPfyJRdk" }
+        ];
+
+        // ======================================================================
+        // CORE INITIALIZATION
+        // ======================================================================
+        window.onload = () => {
+            console.log("J.A.R.V.I.S. Core Matrix Online.");
+            checkApiKey();
+            initClock();
+            initHardware();
+            initEnvironmentals();
+            initNews();
+            updateReminderUI();
+            initEventHandlers();
+            
+            setTimeout(() => {
+                if (API_KEY) speak("All protocols initialized. Good to see you, Sir.");
+            }, 1000);
+        };
+
+        function checkApiKey() {
+            const modal = document.getElementById('api-setup');
+            if (!API_KEY) modal.classList.remove('hidden');
+            else modal.classList.add('hidden');
         }
 
-        // --- PROTOCOL 2: HARDWARE BRIDGE (Browser Restricted) ---
-        function initBridge() {
-            volSlider.oninput = (e) => {
-                const val = e.target.value;
-                document.getElementById('vol-display').innerText = `VOL: ${val}%`;
-                // In browser we only control Jarvis voice volume
-                // System volume requires local Python backend
+        function initClock() {
+            const clockEl = document.getElementById('clock');
+            setInterval(() => { clockEl.innerText = `TIME: ${new Date().toLocaleTimeString()}`; }, 1000);
+            clockEl.innerText = `TIME: ${new Date().toLocaleTimeString()}`;
+        }
+
+        // ======================================================================
+        // PROTOCOLS: HARDWARE & ENVIRONMENT
+        // ======================================================================
+        function initHardware() {
+            // Battery
+            if (navigator.getBattery) {
+                navigator.getBattery().then(battery => {
+                    const updateBattery = () => {
+                        const lvl = Math.round(battery.level * 100);
+                        const el = document.getElementById('battery-status');
+                        el.innerText = lvl + "%";
+                        el.className = lvl < 20 ? 'text-red-500' : 'text-green-400';
+                    };
+                    updateBattery();
+                    battery.addEventListener('levelchange', updateBattery);
+                }).catch(() => document.getElementById('battery-status').innerText = "N/A");
+            }
+            // Network
+            const updateOnline = () => {
+                const online = navigator.onLine;
+                const el = document.getElementById('network-status');
+                el.innerText = online ? "CONNECTED" : "OFFLINE";
+                el.className = online ? 'text-green-400' : 'text-red-500';
             };
+            window.addEventListener('online', updateOnline);
+            window.addEventListener('offline', updateOnline);
+            updateOnline();
         }
 
-        // --- PROTOCOL 4: HOLOGRAPHIC TIMER ---
+        async function initEnvironmentals() {
+            if (!navigator.geolocation) return;
+            navigator.geolocation.getCurrentPosition(async (pos) => {
+                const { latitude, longitude } = pos.coords;
+                try {
+                    const weatherRes = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current_weather=true`);
+                    const weather = await weatherRes.json();
+                    currentWeatherData.temp = Math.round(weather.current_weather.temperature);
+                    document.getElementById('temp-status').innerText = `${currentWeatherData.temp}°C`;
+
+                    const airRes = await fetch(`https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${latitude}&longitude=${longitude}&current=european_aqi`);
+                    const air = await airRes.json();
+                    const aqiValue = air.current.european_aqi;
+                    currentWeatherData.aqi = aqiValue;
+
+                    let desc = "Hazardous";
+                    if (aqiValue <= 20) desc = "Optimal";
+                    else if (aqiValue <= 40) desc = "Fair";
+                    else if (aqiValue <= 60) desc = "Moderate";
+                    
+                    currentWeatherData.aqiDesc = desc;
+                    const aqiEl = document.getElementById('aqi-status');
+                    aqiEl.innerText = `${aqiValue} (${desc.toUpperCase()})`;
+                    aqiEl.className = aqiValue > 60 ? 'text-red-500' : 'text-white';
+                } catch (e) { console.warn("Environmental fetch failed."); }
+            }, () => console.warn("Location denied."));
+            // Refresh every 30 mins
+            setTimeout(initEnvironmentals, 1800000);
+        }
+
+        function initNews() {
+            const headlines = [
+                "STARK INDUSTRIES STOCK UP 4.2% AFTER CLEAN ENERGY BREAKTHROUGH",
+                "AVENGERS INITIATIVE STATUS: MONITORING GLOBAL THREATS",
+                "NEW EXOPLANET DISCOVERED IN SECTOR 7G",
+                "CYBERNETIC INTERFACE REACHES 99.9% SYNCHRONICITY",
+                "WEATHER ALERT: IONIC STORM APPROACHING CENTRAL HUB"
+            ];
+            document.getElementById('news-content').innerText = headlines.join(" | ") + " | " + headlines[0];
+        }
+
+        // ======================================================================
+        // PROTOCOLS: FEATURES (Timer, Matrix, Reminders, YT)
+        // ======================================================================
         function startTimer(duration) {
             if (activeTimer) clearInterval(activeTimer);
             let timeLeft = duration;
-            const fullOffset = 565; // Matches dasharray
+            const timerRing = document.getElementById('timer-ring');
             timerRing.style.strokeDashoffset = 0;
-            
             speak(`Timer initiated for ${duration} seconds, Sir.`);
 
             activeTimer = setInterval(() => {
                 timeLeft--;
-                const offset = fullOffset - (timeLeft / duration) * fullOffset;
+                const offset = 565 - (timeLeft / duration) * 565;
                 timerRing.style.strokeDashoffset = offset;
-
                 if (timeLeft <= 0) {
                     clearInterval(activeTimer);
-                    speak("Time is up, Sir. Alarm protocol active.");
+                    speak("Time is up, Sir. Timer protocol completed.");
                     timerRing.style.strokeDashoffset = 565;
                 }
             }, 1000);
         }
 
-        // --- PROTOCOL 5: SEARCH MATRIX ---
         function launchMatrix(topic) {
-            speak(`Initializing search matrix for ${topic}. Multiple data streams opening now.`);
+            speak(`Initializing search matrix for ${topic}.`);
             const links = [
                 `https://www.google.com/search?q=${encodeURIComponent(topic)}`,
                 `https://en.wikipedia.org/wiki/${encodeURIComponent(topic)}`,
-                `https://www.youtube.com/results?search_query=${encodeURIComponent(topic)}`,
-                `https://news.google.com/search?q=${encodeURIComponent(topic)}`
+                `https://www.youtube.com/results?search_query=${encodeURIComponent(topic)}`
             ];
-            links.forEach(url => {
-                const win = window.open(url, '_blank');
-                if (!win) addLog("MATRIX_ERR", `Stream blocked. Check pop-ups for: ${url}`);
-            });
+            links.forEach(url => window.open(url, '_blank'));
         }
 
-        // --- API & SYSTEM INIT ---
-        function checkApiKey() {
-            if (!API_KEY) apiSetup.classList.remove('hidden');
-            else apiSetup.classList.add('hidden');
+        function updateReminderUI() {
+            const listEl = document.getElementById('reminder-list');
+            if (reminders.length === 0) {
+                listEl.innerHTML = '<span class="opacity-30 text-[10px] w-full text-center mt-2">Registry Empty.</span>';
+                return;
+            }
+            listEl.innerHTML = reminders.map((r, i) => 
+                `<span class="reminder-tag cursor-pointer hover:bg-red-500/20" onclick="removeReminder(${i})" title="Click to remove">
+                    ${r.toUpperCase()} <span class="ml-1 opacity-50">×</span>
+                </span>`
+            ).join('');
         }
 
-        // --- LOGIC ENGINE ---
+        window.removeReminder = (index) => {
+            reminders.splice(index, 1);
+            localStorage.setItem('jarvis_reminders', JSON.stringify(reminders));
+            updateReminderUI();
+        };
+
+        function openYouTube(url, title = "YOUTUBE_OUTPUT") {
+            document.getElementById('mainCore').classList.add('playing');
+            document.getElementById('track-title').innerText = title;
+            document.getElementById('track-artist').innerText = "EXTERNAL_TAB";
+            
+            const win = window.open(url, '_blank');
+            if (!win) {
+                document.getElementById('popup-warning').classList.remove('hidden');
+                addLog("SYSTEM", `Blocked. <a href="${url}" target="_blank" class="yt-link">CLICK TO OPEN ${title}</a>`);
+            } else {
+                document.getElementById('popup-warning').classList.add('hidden');
+            }
+        }
+
+        // ======================================================================
+        // SPEECH ENGINE (TTS & STT)
+        // ======================================================================
+        function speak(text) {
+            isProcessing = true;
+            window.speechSynthesis.cancel();
+            const utterance = new SpeechSynthesisUtterance(text);
+            const voices = window.speechSynthesis.getVoices();
+            const jarvisVoice = voices.find(v => (v.name.includes('Google UK English Male') || v.lang === 'en-GB') && v.name.includes('Male')) || voices[0];
+            
+            if (jarvisVoice) utterance.voice = jarvisVoice;
+            utterance.pitch = 0.95;
+            utterance.rate = 1.05;
+            utterance.volume = systemVolume; // Tied to HW slider
+            
+            utterance.onend = () => { 
+                isProcessing = false; 
+                if (isAlwaysListening) restartListening(); 
+            };
+            window.speechSynthesis.speak(utterance);
+            addLog("JARVIS", text);
+        }
+
+        const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        let recognizer;
+        if (Recognition) {
+            recognizer = new Recognition();
+            recognizer.continuous = false;
+            recognizer.lang = 'en-US';
+
+            recognizer.onstart = () => {
+                document.getElementById('mainCore').classList.add('listening');
+                document.getElementById('status-tag').innerText = 'LISTENING';
+                document.getElementById('transcript').innerText = isAlwaysListening ? 'Awaiting "Jarvis"...' : 'Listening...';
+            };
+
+            recognizer.onresult = (e) => {
+                const text = e.results[0][0].transcript;
+                document.getElementById('transcript').innerText = `"${text}"`;
+                
+                if (isAlwaysListening) {
+                    if (text.toLowerCase().includes('jarvis')) {
+                        const command = text.toLowerCase().split('jarvis').pop().trim();
+                        if (command) { addLog("USER", text); handleInput(command); }
+                        else speak("Yes, Sir?");
+                    } else restartListening();
+                } else {
+                    addLog("USER", text);
+                    handleInput(text);
+                }
+            };
+
+            recognizer.onend = () => {
+                document.getElementById('mainCore').classList.remove('listening');
+                document.getElementById('status-tag').innerText = 'ONLINE';
+                if (isAlwaysListening && !isProcessing) restartListening();
+            };
+            recognizer.onerror = () => { if (isAlwaysListening) restartListening(); };
+        }
+
+        function restartListening() {
+            if (isAlwaysListening && !isProcessing) {
+                setTimeout(() => { try { recognizer.start(); } catch(e) {} }, 400);
+            }
+        }
+
+        function toggleContinuous(force) {
+            isAlwaysListening = force !== undefined ? force : !isAlwaysListening;
+            const btn = document.getElementById('continuousBtn');
+            const status = document.getElementById('wake-status');
+            
+            if (isAlwaysListening) {
+                btn.classList.add('btn-active');
+                status.innerText = 'ACTIVE';
+                status.className = 'text-green-400 font-bold';
+                try { recognizer.start(); } catch(e) {}
+            } else {
+                btn.classList.remove('btn-active');
+                status.innerText = 'DISABLED';
+                status.className = 'text-red-500 font-bold';
+                try { recognizer.stop(); } catch(e) {}
+            }
+        }
+
+        // ======================================================================
+        // COMMAND PARSER & GROQ AI UPLINK
+        // ======================================================================
+        function addLog(sender, text) {
+            const row = document.createElement('div');
+            row.className = 'mb-2 border-l border-cyan-500/30 pl-2 py-1';
+            row.innerHTML = `<span class="text-[7px] block opacity-40 orbitron">${sender}</span><p class="text-xs leading-relaxed text-white">${text}</p>`;
+            const buffer = document.getElementById('msgBuffer');
+            buffer.appendChild(row);
+            document.getElementById('chatWindow').scrollTop = document.getElementById('chatWindow').scrollHeight;
+        }
+
         async function handleInput(cmd) {
             const query = cmd.toLowerCase();
             
-            // Research Matrix
+            // 1. Matrix / Search
             if (query.includes('research') || query.includes('matrix search')) {
-                const topic = query.replace('research', '').replace('matrix search', '').trim();
+                const topic = query.replace('research', '').replace('matrix search', '').replace('jarvis', '').trim();
                 launchMatrix(topic || 'advanced robotics');
                 return;
             }
 
-            // Timer Logic
+            // 2. Timers
             if (query.includes('timer for')) {
-                const seconds = parseInt(query.match(/\d+/)) || 60;
-                startTimer(seconds);
+                const match = query.match(/\d+/);
+                if(match) startTimer(parseInt(match[0]));
+                else speak("Please specify the duration in seconds, Sir.");
                 return;
             }
 
-            // Reminders
+            // 3. Reminders
             if (query.includes('remind me to')) {
                 const task = query.split('remind me to')[1].trim();
                 reminders.push(task);
@@ -370,19 +590,44 @@
                 speak(`Reminder logged: ${task}.`);
                 return;
             }
-
-            // Standard Search
-            if (query.startsWith('play ') || query.includes('open youtube')) {
-                const song = query.replace('play music', '').replace('play', '').trim();
-                window.open(`https://www.youtube.com/results?search_query=${encodeURIComponent(song)}`, '_blank');
-                speak(`Searching YouTube for ${song}.`);
+            if (query.includes('what are my reminders')) {
+                if(reminders.length===0) speak("Registry is empty, Sir.");
+                else speak(`You have ${reminders.length} tasks: ${reminders.join(", ")}.`);
                 return;
             }
 
+            // 4. Weather
+            if (query.includes('weather') || query.includes('air quality')) {
+                if (currentWeatherData.temp !== null) {
+                    speak(`Current temperature is ${currentWeatherData.temp} degrees. Air quality is ${currentWeatherData.aqiDesc}.`);
+                } else speak("Sensors calibrating. Please try again shortly.");
+                return;
+            }
+
+            // 5. Music
+            if (query.startsWith('play ') || query.includes('open youtube')) {
+                const song = query.replace('play music', '').replace('play', '').replace('jarvis', '').trim();
+                if(song) {
+                    openYouTube(`https://www.youtube.com/results?search_query=${encodeURIComponent(song)}`, song.toUpperCase());
+                    speak(`Initiating search for ${song}.`);
+                } else {
+                    openYouTube(playlist[0].url, playlist[0].title);
+                    speak("Playing default playlist.");
+                }
+                return;
+            }
+
+            // 6. System Toggles
+            if (query.includes('time')) { speak(`The time is ${new Date().toLocaleTimeString()}, Sir.`); return; }
+            if (query.includes('stealth mode')) { document.body.classList.add('stealth-mode'); document.getElementById('mode-text').innerText = "STEALTH"; speak("Stealth protocol active."); return; }
+            if (query.includes('standard mode')) { document.body.classList.remove('stealth-mode'); document.getElementById('mode-text').innerText = "STANDARD_OS"; speak("Standard protocols restored."); return; }
+            if (query.includes('stop listening')) { toggleContinuous(false); speak("Suspending audio sensors."); return; }
+
+            // 7. AI Fallback
             if (!API_KEY) { checkApiKey(); return; }
-            statusTag.innerText = 'THINKING';
+            document.getElementById('status-tag').innerText = 'THINKING';
             await callNeuralNetwork(cmd);
-            statusTag.innerText = 'ONLINE';
+            document.getElementById('status-tag').innerText = 'ONLINE';
         }
 
         async function callNeuralNetwork(prompt) {
@@ -393,81 +638,58 @@
                     body: JSON.stringify({
                         model: "llama-3.3-70b-versatile",
                         messages: [
-                            { role: "system", content: "You are JARVIS. Sophisticated, brief, professional Stark AI. Call user Sir. Witty tone." },
+                            { role: "system", content: "You are JARVIS. Sophisticated Stark Industries AI. Be brief, professional, call the user Sir. Responses strictly under 3 sentences." },
                             { role: "user", content: prompt }
                         ]
                     })
                 });
+                if (!response.ok) throw new Error("Neural Uplink Failure");
                 const data = await response.json();
                 speak(data.choices[0].message.content);
             } catch (err) {
-                addLog("ERROR", "Uplink failure.");
-                speak("Sir, the neural uplink is unstable.");
+                addLog("ERROR", err.message);
+                speak("I'm afraid the neural link has been disrupted, Sir.");
             }
         }
 
-        // --- UTILS ---
-        function speak(text) {
-            isProcessing = true;
-            window.speechSynthesis.cancel();
-            const utterance = new SpeechSynthesisUtterance(text);
-            const voices = window.speechSynthesis.getVoices();
-            const jarvisVoice = voices.find(v => (v.name.includes('Google UK English Male') || v.lang === 'en-GB') && v.name.includes('Male')) || voices[0];
-            if (jarvisVoice) utterance.voice = jarvisVoice;
-            utterance.onend = () => { isProcessing = false; if (isAlwaysListening) restartListening(); };
-            window.speechSynthesis.speak(utterance);
-            addLog("JARVIS", text);
-        }
-
-        function addLog(sender, text) {
-            const row = document.createElement('div');
-            row.className = 'mb-2 border-l border-cyan-500/30 pl-2 py-1';
-            row.innerHTML = `<span class="text-[7px] block opacity-40 orbitron">${sender}</span><p class="text-xs leading-relaxed">${text}</p>`;
-            msgBuffer.appendChild(row);
-            chatWindow.scrollTop = chatWindow.scrollHeight;
-        }
-
-        function updateReminderUI() {
-            if (reminders.length === 0) { reminderListEl.innerHTML = '<span class="opacity-30 text-[10px]">Empty.</span>'; return; }
-            reminderListEl.innerHTML = reminders.map((r, i) => `<span class="reminder-tag bg-cyan-500/10 px-2 py-1 rounded text-[9px] border border-cyan-500/20">${r.toUpperCase()}</span>`).join('');
-        }
-
-        // --- SPEECH ---
-        const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-        let recognizer;
-        if (Recognition) {
-            recognizer = new Recognition();
-            recognizer.onstart = () => { core.classList.add('listening'); };
-            recognizer.onresult = (e) => {
-                const text = e.results[0][0].transcript;
-                if (isAlwaysListening) {
-                    if (text.toLowerCase().includes('jarvis')) {
-                        handleInput(text.toLowerCase().split('jarvis').pop());
-                    }
-                } else { handleInput(text); }
+        // ======================================================================
+        // EVENT LISTENERS & DOM BINDINGS
+        // ======================================================================
+        function initEventHandlers() {
+            // API Setup
+            document.getElementById('saveKeyBtn').onclick = () => {
+                const val = document.getElementById('apiKeyInput').value.trim();
+                if(val.startsWith('gsk_')) { localStorage.setItem('jarvis_groq_key', val); API_KEY = val; checkApiKey(); speak("Authorization complete."); }
+                else alert("Invalid format. Requires gsk_ key.");
             };
-            recognizer.onend = () => { core.classList.remove('listening'); if (isAlwaysListening && !isProcessing) restartListening(); };
+            document.getElementById('resetKeyBtn').onclick = () => { localStorage.removeItem('jarvis_groq_key'); location.reload(); };
+            
+            // Text Command
+            document.getElementById('sendBtn').onclick = () => { 
+                const el = document.getElementById('commandInput');
+                if(el.value){ addLog("USER", el.value); handleInput(el.value); el.value=''; }
+            };
+            document.getElementById('commandInput').onkeypress = (e) => { if(e.key === 'Enter') document.getElementById('sendBtn').click(); };
+            
+            // Voice
+            document.getElementById('voiceBtn').onclick = () => { isAlwaysListening = false; toggleContinuous(false); if(recognizer) recognizer.start(); };
+            document.getElementById('continuousBtn').onclick = () => toggleContinuous();
+            
+            // UI Resets
+            document.getElementById('resetBtn').onclick = () => { document.getElementById('msgBuffer').innerHTML = ''; document.getElementById('transcript').innerText = '"HUD reset complete."'; };
+            document.getElementById('purgeCacheBtn').onclick = () => { reminders = []; localStorage.setItem('jarvis_reminders', JSON.stringify([])); updateReminderUI(); speak("Neural cache purged."); };
+            
+            // Music Buttons
+            document.getElementById('playPauseTrack').onclick = () => openYouTube(playlist[currentTrackIndex].url, playlist[currentTrackIndex].title);
+            document.getElementById('nextTrack').onclick = () => { currentTrackIndex = (currentTrackIndex + 1) % playlist.length; openYouTube(playlist[currentTrackIndex].url, playlist[currentTrackIndex].title); };
+            document.getElementById('prevTrack').onclick = () => { currentTrackIndex = (currentTrackIndex - 1 + playlist.length) % playlist.length; openYouTube(playlist[currentTrackIndex].url, playlist[currentTrackIndex].title); };
+            
+            // Volume Bridge
+            document.getElementById('vol-slider').oninput = (e) => {
+                document.getElementById('vol-display').innerText = `${e.target.value}%`;
+                systemVolume = e.target.value / 100;
+            };
         }
-        function restartListening() { try { recognizer.start(); } catch(e) {} }
-
-        // --- BUTTONS ---
-        saveKeyBtn.onclick = () => {
-            const val = document.getElementById('apiKeyInput').value.trim();
-            if(val) { localStorage.setItem('jarvis_groq_key', val); API_KEY = val; checkApiKey(); speak("Authorization complete."); }
-        };
-        resetKeyBtn.onclick = () => { localStorage.removeItem('jarvis_groq_key'); location.reload(); };
-        sendBtn.onclick = () => { const val = commandInput.value; if(val){ addLog("USER", val); handleInput(val); commandInput.value=''; }};
-        voiceBtn.onclick = () => { isAlwaysListening = false; recognizer.start(); };
-        continuousBtn.onclick = () => { isAlwaysListening = !isAlwaysListening; document.getElementById('wake-status').innerText = isAlwaysListening ? 'ACTIVE' : 'DISABLED'; if(isAlwaysListening) restartListening(); };
-
-        window.onload = () => {
-            checkApiKey();
-            initBridge();
-            updateNews();
-            updateReminderUI();
-            setInterval(() => { document.getElementById('clock').innerText = `TIME: ${new Date().toLocaleTimeString()}`; }, 1000);
-            setTimeout(() => { if (API_KEY) speak("Neural matrix initialized. News uplink active. Standing by, Sir."); }, 1000);
-        };
     </script>
 </body>
 </html>
