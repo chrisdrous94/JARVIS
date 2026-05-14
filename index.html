@@ -138,12 +138,12 @@
         /* News Ticker */
         .news-ticker {
             position: fixed; bottom: 0; left: 0; width: 100%;
-            background: rgba(0, 0, 0, 0.8); border-top: 1px solid var(--jarvis-blue);
+            background: rgba(0, 0, 0, 0.85); border-top: 1px solid var(--jarvis-blue);
             height: 30px; overflow: hidden; display: flex; align-items: center; z-index: 100;
         }
         .ticker-content {
             display: inline-block; white-space: nowrap; padding-left: 100%;
-            animation: ticker 30s linear infinite; font-size: 10px; text-transform: uppercase; letter-spacing: 2px;
+            animation: ticker 25s linear infinite; font-size: 11px; text-transform: uppercase; letter-spacing: 2px;
         }
         @keyframes ticker { 0% { transform: translate3d(0, 0, 0); } 100% { transform: translate3d(-100%, 0, 0); } }
 
@@ -233,11 +233,11 @@
                     <div id="popup-warning" class="text-[8px] text-red-500 hidden animate-pulse">POP-UP BLOCKED!</div>
                 </div>
                 <div class="flex items-center gap-4">
-                    <div class="flex flex-col flex-grow">
-                        <span id="track-title" class="text-xs truncate w-40 text-white uppercase tracking-wider">Media Standby</span>
+                    <div class="flex flex-col flex-grow overflow-hidden">
+                        <span id="track-title" class="text-xs truncate w-full text-white uppercase tracking-wider">Media Standby</span>
                         <span id="track-artist" class="text-[9px] opacity-50 uppercase tracking-tighter">YouTube Interface</span>
                     </div>
-                    <div class="flex gap-3">
+                    <div class="flex gap-3 shrink-0">
                         <button id="prevTrack" class="hover:text-white transition-colors">
                             <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M6 6h2v12H6zm3.5 6L18 18V6z"/></svg>
                         </button>
@@ -276,7 +276,7 @@
     <!-- Global News Ticker -->
     <div class="news-ticker orbitron">
         <div class="ticker-content" id="news-content">
-            INITIALIZING NEWS UPLINK... STANDBY...
+            INITIALIZING LIVE NEWS UPLINK... FETCHING GLOBAL DATA STREAMS...
         </div>
     </div>
 
@@ -294,7 +294,7 @@
         let currentWeatherData = { temp: null, aqi: null, aqiDesc: "Unknown" };
         let reminders = JSON.parse(localStorage.getItem('jarvis_reminders')) || [];
         let currentTrackIndex = 0;
-        let systemVolume = 0.8; // Default 80%
+        let systemVolume = 0.8; 
 
         const playlist = [
             { title: "STARK_EXPO_MIX", url: "https://www.youtube.com/results?search_query=ac+dc+iron+man+soundtrack" },
@@ -311,12 +311,12 @@
             initClock();
             initHardware();
             initEnvironmentals();
-            initNews();
+            initLiveNews();
             updateReminderUI();
             initEventHandlers();
             
             setTimeout(() => {
-                if (API_KEY) speak("All protocols initialized. Good to see you, Sir.");
+                if (API_KEY) speak("All protocols initialized. Systems are online and ready, Sir.");
             }, 1000);
         };
 
@@ -333,10 +333,33 @@
         }
 
         // ======================================================================
-        // PROTOCOLS: HARDWARE & ENVIRONMENT
+        // PROTOCOLS: LIVE NEWS, HARDWARE & ENVIRONMENT
         // ======================================================================
+        
+        // BUG FIX: Live News Fetcher via Reddit WorldNews (Free, CORS-enabled, No Key needed)
+        async function initLiveNews() {
+            try {
+                const response = await fetch('https://www.reddit.com/r/worldnews/top.json?limit=6&t=day');
+                const data = await response.json();
+                
+                // Extract titles, clean up, and uppercase them
+                const headlines = data.data.children.map(post => post.data.title.toUpperCase());
+                
+                // Set animation content
+                const tickerStr = headlines.join("   //   ") + "   //   " + headlines[0];
+                document.getElementById('news-content').innerText = tickerStr;
+            } catch (err) {
+                console.warn("Live news blocked. Falling back to localized internal data.", err);
+                const backup = [
+                    "GLOBAL UPLINK FAILURE: LIVE NEWS UNAVAILABLE",
+                    "STARK INDUSTRIES STOCK STABILIZES",
+                    "AVENGERS INITIATIVE: STANDBY MODE ENGAGED"
+                ];
+                document.getElementById('news-content').innerText = backup.join("   //   ") + "   //   " + backup[0];
+            }
+        }
+
         function initHardware() {
-            // Battery
             if (navigator.getBattery) {
                 navigator.getBattery().then(battery => {
                     const updateBattery = () => {
@@ -349,7 +372,6 @@
                     battery.addEventListener('levelchange', updateBattery);
                 }).catch(() => document.getElementById('battery-status').innerText = "N/A");
             }
-            // Network
             const updateOnline = () => {
                 const online = navigator.onLine;
                 const el = document.getElementById('network-status');
@@ -387,19 +409,7 @@
                     aqiEl.className = aqiValue > 60 ? 'text-red-500' : 'text-white';
                 } catch (e) { console.warn("Environmental fetch failed."); }
             }, () => console.warn("Location denied."));
-            // Refresh every 30 mins
             setTimeout(initEnvironmentals, 1800000);
-        }
-
-        function initNews() {
-            const headlines = [
-                "STARK INDUSTRIES STOCK UP 4.2% AFTER CLEAN ENERGY BREAKTHROUGH",
-                "AVENGERS INITIATIVE STATUS: MONITORING GLOBAL THREATS",
-                "NEW EXOPLANET DISCOVERED IN SECTOR 7G",
-                "CYBERNETIC INTERFACE REACHES 99.9% SYNCHRONICITY",
-                "WEATHER ALERT: IONIC STORM APPROACHING CENTRAL HUB"
-            ];
-            document.getElementById('news-content').innerText = headlines.join(" | ") + " | " + headlines[0];
         }
 
         // ======================================================================
@@ -424,24 +434,55 @@
             }, 1000);
         }
 
+        // BUG FIX: Search Matrix - Injects clickable UI block to bypass Pop-Up Blockers
         function launchMatrix(topic) {
-            speak(`Initializing search matrix for ${topic}.`);
+            speak(`Initializing search matrix for ${topic}. I have generated direct secure links to bypass browser security protocols.`);
+            
             const links = [
-                `https://www.google.com/search?q=${encodeURIComponent(topic)}`,
-                `https://en.wikipedia.org/wiki/${encodeURIComponent(topic)}`,
-                `https://www.youtube.com/results?search_query=${encodeURIComponent(topic)}`
+                { name: 'GOOGLE CORE', url: `https://www.google.com/search?q=${encodeURIComponent(topic)}` },
+                { name: 'WIKI DATABASE', url: `https://en.wikipedia.org/wiki/Special:Search?search=${encodeURIComponent(topic)}` },
+                { name: 'VIDEO ARCHIVE', url: `https://www.youtube.com/results?search_query=${encodeURIComponent(topic)}` }
             ];
-            links.forEach(url => window.open(url, '_blank'));
+
+            let htmlString = `
+                <div class="mt-2 p-3 border border-cyan-500/50 bg-cyan-900/30 rounded-lg shadow-[0_0_10px_rgba(0,210,255,0.2)]">
+                    <div class="text-[9px] opacity-70 mb-2 font-bold tracking-widest text-white border-b border-cyan-500/30 pb-1">
+                        MATRIX DEPLOYMENT: ${topic.toUpperCase()}
+                    </div>
+                    <div class="flex flex-col gap-2">`;
+            
+            links.forEach(link => {
+                // We attempt auto-open, but we KNOW browsers will block multiple at once.
+                const win = window.open(link.url, '_blank');
+                const statusHtml = win 
+                    ? `<span class="text-green-400 text-[8px]">[AUTO-OPENED]</span>` 
+                    : `<span class="text-red-400 text-[8px]">[BLOCKED - CLICK HERE]</span>`;
+                
+                htmlString += `
+                    <a href="${link.url}" target="_blank" class="flex items-center justify-between p-2 bg-black/40 hover:bg-cyan-500/20 border border-cyan-500/20 rounded transition-colors text-cyan-300 hover:text-white text-xs">
+                        <span><span class="opacity-50 mr-2">></span>${link.name}</span>
+                        ${statusHtml}
+                    </a>`;
+            });
+            
+            htmlString += `</div></div>`;
+
+            const row = document.createElement('div');
+            row.className = 'mb-2 border-l border-cyan-500/30 pl-2 py-1';
+            row.innerHTML = `<span class="text-[7px] block opacity-40 orbitron">SYSTEM</span>${htmlString}`;
+            
+            document.getElementById('msgBuffer').appendChild(row);
+            document.getElementById('chatWindow').scrollTop = document.getElementById('chatWindow').scrollHeight;
         }
 
         function updateReminderUI() {
             const listEl = document.getElementById('reminder-list');
             if (reminders.length === 0) {
-                listEl.innerHTML = '<span class="opacity-30 text-[10px] w-full text-center mt-2">Registry Empty.</span>';
+                listEl.innerHTML = '<span class="opacity-30 text-[10px] w-full mt-2">Registry Empty.</span>';
                 return;
             }
             listEl.innerHTML = reminders.map((r, i) => 
-                `<span class="reminder-tag cursor-pointer hover:bg-red-500/20" onclick="removeReminder(${i})" title="Click to remove">
+                `<span class="reminder-tag bg-cyan-500/10 px-2 py-1 rounded text-[9px] border border-cyan-500/20 cursor-pointer hover:bg-red-500/20 transition-colors" onclick="removeReminder(${i})" title="Click to remove">
                     ${r.toUpperCase()} <span class="ml-1 opacity-50">×</span>
                 </span>`
             ).join('');
@@ -461,7 +502,7 @@
             const win = window.open(url, '_blank');
             if (!win) {
                 document.getElementById('popup-warning').classList.remove('hidden');
-                addLog("SYSTEM", `Blocked. <a href="${url}" target="_blank" class="yt-link">CLICK TO OPEN ${title}</a>`);
+                addLog("SYSTEM", `Pop-up blocked. <a href="${url}" target="_blank" class="yt-link">CLICK HERE TO OPEN ${title}</a>`);
             } else {
                 document.getElementById('popup-warning').classList.add('hidden');
             }
@@ -480,7 +521,7 @@
             if (jarvisVoice) utterance.voice = jarvisVoice;
             utterance.pitch = 0.95;
             utterance.rate = 1.05;
-            utterance.volume = systemVolume; // Tied to HW slider
+            utterance.volume = systemVolume; 
             
             utterance.onend = () => { 
                 isProcessing = false; 
@@ -556,7 +597,7 @@
         // ======================================================================
         function addLog(sender, text) {
             const row = document.createElement('div');
-            row.className = 'mb-2 border-l border-cyan-500/30 pl-2 py-1';
+            row.className = 'mb-2 border-l border-cyan-500/30 pl-2 py-1 animate-[slideIn_0.3s_ease-out]';
             row.innerHTML = `<span class="text-[7px] block opacity-40 orbitron">${sender}</span><p class="text-xs leading-relaxed text-white">${text}</p>`;
             const buffer = document.getElementById('msgBuffer');
             buffer.appendChild(row);
@@ -568,7 +609,12 @@
             
             // 1. Matrix / Search
             if (query.includes('research') || query.includes('matrix search')) {
-                const topic = query.replace('research', '').replace('matrix search', '').replace('jarvis', '').trim();
+                // Regex cleanly extracts the topic by removing trigger words
+                let topic = query;
+                ['jarvis', 'research', 'matrix search'].forEach(w => {
+                    topic = topic.replace(new RegExp(`\\b${w}\\b`, 'gi'), '');
+                });
+                topic = topic.trim();
                 launchMatrix(topic || 'advanced robotics');
                 return;
             }
@@ -606,7 +652,12 @@
 
             // 5. Music
             if (query.startsWith('play ') || query.includes('open youtube')) {
-                const song = query.replace('play music', '').replace('play', '').replace('jarvis', '').trim();
+                let song = query;
+                ['jarvis', 'play music', 'play', 'open youtube'].forEach(w => {
+                    song = song.replace(new RegExp(`\\b${w}\\b`, 'gi'), '');
+                });
+                song = song.trim();
+                
                 if(song) {
                     openYouTube(`https://www.youtube.com/results?search_query=${encodeURIComponent(song)}`, song.toUpperCase());
                     speak(`Initiating search for ${song}.`);
@@ -638,7 +689,7 @@
                     body: JSON.stringify({
                         model: "llama-3.3-70b-versatile",
                         messages: [
-                            { role: "system", content: "You are JARVIS. Sophisticated Stark Industries AI. Be brief, professional, call the user Sir. Responses strictly under 3 sentences." },
+                            { role: "system", content: "You are JARVIS. Sophisticated, brief, professional Stark AI. Call user Sir. Witty tone." },
                             { role: "user", content: prompt }
                         ]
                     })
@@ -647,13 +698,13 @@
                 const data = await response.json();
                 speak(data.choices[0].message.content);
             } catch (err) {
-                addLog("ERROR", err.message);
-                speak("I'm afraid the neural link has been disrupted, Sir.");
+                addLog("ERROR", "Uplink failure.");
+                speak("Sir, the neural uplink is unstable.");
             }
         }
 
         // ======================================================================
-        // EVENT LISTENERS & DOM BINDINGS
+        // EVENT LISTENERS BINDING
         // ======================================================================
         function initEventHandlers() {
             // API Setup
