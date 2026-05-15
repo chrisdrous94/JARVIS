@@ -375,6 +375,120 @@ input[type=range]::-webkit-slider-thumb{
 .mode-dot.active-alt{background:rgba(255,220,50,0.4);box-shadow:0 0 8px rgba(255,220,50,0.3);border-color:#ffdc32}
 .mode-lbl{font-size:7px;letter-spacing:2px;color:rgba(95,255,212,0.2);margin-top:4px}
 
+/* ── IDLE SCREEN ── */
+#idleScreen{
+  position:fixed;inset:0;z-index:1500;
+  background:#02030a;
+  display:none;align-items:center;justify-content:center;flex-direction:column;
+  cursor:pointer;
+  transition:opacity .8s ease;
+}
+#idleScreen.show{display:flex}
+#idleOrb{width:260px;height:260px}
+.idle-time{
+  font-family:'Cormorant Garamond',serif;font-weight:300;
+  font-size:clamp(48px,8vw,96px);letter-spacing:16px;
+  color:rgba(95,255,212,0.55);margin-top:24px;
+  text-shadow:0 0 40px rgba(95,255,212,0.2);
+  text-align:center;
+}
+.idle-date{font-size:11px;letter-spacing:6px;color:rgba(95,255,212,0.25);margin-top:8px;text-align:center}
+.idle-hint{font-size:8px;letter-spacing:3px;color:rgba(95,255,212,0.15);margin-top:40px;animation:softblink 2.5s ease-in-out infinite}
+
+/* ── COUNTDOWN CLOCK ── */
+#countdownWrap{
+  text-align:center;margin-top:6px;min-height:40px;width:100%;
+}
+.cd-event{font-size:8px;letter-spacing:4px;color:rgba(95,255,212,0.45);margin-bottom:4px;text-transform:uppercase}
+.cd-digits{display:flex;gap:10px;justify-content:center;align-items:baseline}
+.cd-unit{text-align:center}
+.cd-num{font-family:'Orbitron',sans-serif;font-size:22px;font-weight:300;color:rgba(95,255,212,0.8);text-shadow:0 0 12px rgba(95,255,212,0.3);line-height:1}
+.cd-lbl{font-size:6.5px;letter-spacing:3px;color:rgba(95,255,212,0.3);margin-top:2px}
+.cd-sep{font-family:'Orbitron',sans-serif;font-size:18px;color:rgba(95,255,212,0.2);padding-bottom:4px}
+.cd-none{font-size:9px;color:rgba(95,255,212,0.2);letter-spacing:2px}
+.cd-urgent .cd-num{color:rgba(255,120,140,0.9);text-shadow:0 0 12px rgba(255,80,120,0.4)}
+
+/* ── MIT PANEL ── */
+.mit-item{
+  display:flex;align-items:flex-start;gap:10px;padding:8px 0;
+  border-bottom:1px solid rgba(95,255,212,0.06);
+}
+.mit-item:last-child{border-bottom:none}
+.mit-num{font-family:'Orbitron',sans-serif;font-size:10px;color:rgba(95,255,212,0.3);flex-shrink:0;margin-top:1px}
+.mit-text{font-size:10.5px;color:rgba(220,245,240,0.75);line-height:1.5;flex:1}
+.mit-done{text-decoration:line-through;opacity:.4}
+.mit-check{width:14px;height:14px;border:1px solid rgba(95,255,212,0.2);border-radius:50%;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all .2s;margin-top:2px}
+.mit-check:hover{border-color:rgba(95,255,212,0.5)}
+.mit-check.done{background:rgba(95,255,212,0.2);border-color:rgba(95,255,212,0.5)}
+.mit-check.done::after{content:'·';color:var(--t);font-size:16px;line-height:0.6}
+
+/* ── SHUTDOWN / PLANNING MODAL ── */
+.flow-modal{
+  position:fixed;inset:0;z-index:600;
+  background:rgba(2,3,10,0.94);backdrop-filter:blur(14px);
+  display:none;align-items:center;justify-content:center;
+}
+.flow-modal.show{display:flex}
+.flow-box{
+  background:rgba(4,5,14,0.98);
+  border:1px solid rgba(95,255,212,0.12);
+  border-radius:4px;padding:36px;
+  max-width:520px;width:94%;
+  box-shadow:0 0 60px rgba(95,255,212,0.04);
+}
+.flow-box.violet{border-color:rgba(184,138,255,0.12)}
+.flow-step{display:none}.flow-step.active{display:block}
+.flow-q{font-family:'Cormorant Garamond',serif;font-weight:300;font-size:20px;letter-spacing:3px;color:rgba(220,245,240,0.85);margin-bottom:6px;line-height:1.4}
+.flow-hint{font-size:8.5px;letter-spacing:2px;color:rgba(95,255,212,0.35);margin-bottom:18px}
+.flow-inp{
+  width:100%;background:transparent;border:none;border-bottom:1px solid rgba(95,255,212,0.15);
+  color:rgba(220,245,240,0.8);padding:8px 0;font-family:'Share Tech Mono',monospace;font-size:11px;
+  outline:none;letter-spacing:1px;margin-bottom:20px;transition:border-color .3s;resize:none;
+}
+.flow-inp:focus{border-color:rgba(95,255,212,0.4)}
+.flow-progress{display:flex;gap:6px;margin-bottom:20px}
+.flow-dot{width:6px;height:6px;border-radius:50%;background:rgba(95,255,212,0.12);transition:all .3s}
+.flow-dot.done{background:rgba(95,255,212,0.5)}
+.flow-dot.active{background:var(--t);box-shadow:0 0 8px rgba(95,255,212,0.4)}
+.flow-nav{display:flex;justify-content:space-between;align-items:center}
+.flow-btn{background:transparent;border:1px solid rgba(95,255,212,0.18);color:rgba(95,255,212,0.6);
+  font-family:'Share Tech Mono',monospace;font-size:9px;letter-spacing:2px;padding:8px 16px;
+  cursor:pointer;border-radius:20px;transition:all .3s}
+.flow-btn:hover{border-color:rgba(95,255,212,0.45);color:var(--t)}
+.flow-skip{font-size:8px;letter-spacing:2px;color:rgba(95,255,212,0.2);cursor:pointer;transition:color .2s}
+.flow-skip:hover{color:rgba(95,255,212,0.5)}
+
+/* ── WEEKLY REPORT MODAL ── */
+#weeklyModal{
+  position:fixed;inset:0;z-index:600;
+  background:rgba(2,3,10,0.94);backdrop-filter:blur(14px);
+  display:none;align-items:center;justify-content:center;
+}
+#weeklyModal.show{display:flex}
+.weekly-box{
+  background:rgba(4,5,14,0.98);
+  border:1px solid rgba(184,138,255,0.12);
+  border-radius:4px;padding:36px;
+  max-width:580px;width:94%;max-height:88vh;overflow-y:auto;
+  box-shadow:0 0 60px rgba(184,138,255,0.04);
+}
+.weekly-box::-webkit-scrollbar{width:2px}
+.weekly-box::-webkit-scrollbar-thumb{background:rgba(184,138,255,0.2)}
+.weekly-title{font-family:'Cormorant Garamond',serif;font-weight:300;font-size:22px;letter-spacing:8px;color:rgba(184,138,255,0.8);margin-bottom:4px}
+.weekly-sub{font-size:8px;letter-spacing:3px;color:rgba(184,138,255,0.3);margin-bottom:24px}
+.weekly-section{margin-bottom:20px}
+.weekly-section-title{font-size:8px;letter-spacing:4px;color:rgba(95,255,212,0.45);text-transform:uppercase;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid rgba(95,255,212,0.06)}
+.weekly-stat{display:flex;justify-content:space-between;font-size:10.5px;color:rgba(220,245,240,0.7);padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.03)}
+.weekly-stat span:last-child{color:rgba(184,138,255,0.8);font-family:'Orbitron',sans-serif;font-size:11px}
+.weekly-habit-row{display:flex;justify-content:space-between;align-items:center;padding:5px 0;font-size:10px;color:rgba(220,245,240,0.65)}
+.weekly-bar{height:2px;border-radius:2px;background:rgba(184,138,255,0.15);flex:1;margin:0 12px;overflow:hidden}
+.weekly-bar-fill{height:100%;background:linear-gradient(90deg,rgba(120,60,200,0.6),rgba(184,138,255,0.8));border-radius:2px}
+
+/* ── TIMEBOX CARD ── */
+.tb-slot{display:flex;gap:10px;padding:7px 0;border-bottom:1px solid rgba(95,255,212,0.05);align-items:flex-start}
+.tb-time{font-family:'Orbitron',sans-serif;font-size:9px;color:rgba(95,255,212,0.45);flex-shrink:0;min-width:40px;margin-top:2px}
+.tb-task{font-size:10px;color:rgba(220,245,240,0.72);line-height:1.5;flex:1}
+
 @media(max-width:860px){
   #app{grid-template-columns:1fr;grid-template-rows:auto auto auto;overflow-y:auto}
   html,body{overflow:auto;height:auto}
@@ -491,6 +605,22 @@ input[type=range]::-webkit-slider-thumb{
       <canvas id="orbCanvas" width="280" height="280"></canvas>
     </div>
 
+    <div id="countdownWrap">
+      <div class="cd-none" id="cdNone">no countdown set</div>
+      <div id="cdDisplay" style="display:none">
+        <div class="cd-event" id="cdEvent">—</div>
+        <div class="cd-digits" id="cdDigits">
+          <div class="cd-unit"><div class="cd-num" id="cdD">00</div><div class="cd-lbl">days</div></div>
+          <div class="cd-sep">:</div>
+          <div class="cd-unit"><div class="cd-num" id="cdH">00</div><div class="cd-lbl">hrs</div></div>
+          <div class="cd-sep">:</div>
+          <div class="cd-unit"><div class="cd-num" id="cdM">00</div><div class="cd-lbl">min</div></div>
+          <div class="cd-sep">:</div>
+          <div class="cd-unit"><div class="cd-num" id="cdS">00</div><div class="cd-lbl">sec</div></div>
+        </div>
+      </div>
+    </div>
+
     <div class="c-name">FRIDAY</div>
     <div class="c-sub">female replacement intelligent digital assistant youth</div>
 
@@ -558,9 +688,28 @@ input[type=range]::-webkit-slider-thumb{
       </div>
     </div>
 
+    <!-- MIT -->
+    <div class="card" style="border-left:1px solid rgba(95,255,212,0.1)">
+      <div class="card-label" style="color:rgba(95,255,212,0.6);display:flex;justify-content:space-between;align-items:center">
+        <span>most important tasks</span>
+        <span id="mitDate" style="font-size:7px;letter-spacing:2px;opacity:.4"></span>
+      </div>
+      <div id="mitList">
+        <div style="font-size:9px;color:rgba(220,245,240,0.3);letter-spacing:1px">say "mit" to set today's top 3 tasks</div>
+      </div>
+    </div>
+
+    <!-- TIMEBOX -->
+    <div class="card" style="border-left:1px solid rgba(95,255,212,0.08)" id="timeboxCard">
+      <div class="card-label" style="color:rgba(95,255,212,0.55)">today's schedule</div>
+      <div id="timeboxList">
+        <div style="font-size:9px;color:rgba(220,245,240,0.3);letter-spacing:1px">say "timebox my day" to generate a schedule</div>
+      </div>
+    </div>
+
     <!-- TASKS -->
     <div class="card" style="border-left:1px solid rgba(184,138,255,0.08)">
-      <div class="card-label" style="color:rgba(184,138,255,0.22)">task registry</div>
+      <div class="card-label" style="color:rgba(184,138,255,0.6)">task registry</div>
       <div class="cw" id="remList" style="display:flex;flex-wrap:wrap;gap:4px;min-height:24px">
         <span style="font-size:8px;color:rgba(200,230,225,0.15)">empty.</span>
       </div>
@@ -572,9 +721,13 @@ input[type=range]::-webkit-slider-thumb{
       <div style="font-size:9.5px;color:rgba(220,245,240,0.55);line-height:2.2;letter-spacing:1px">
         "remind me to [task]"<br>
         "timer for [n] seconds"<br>
-        "play [song]"<br>
-        "research [topic]"<br>
-        "check in" · "weather"<br>
+        "play [song]" · "research [topic]"<br>
+        "check in" · "weather" · "time"<br>
+        "shutdown" — end of day ritual<br>
+        "weekly report" — this week's summary<br>
+        "countdown [event] on [date]"<br>
+        "timebox my day" — schedule tasks<br>
+        "mit" — set top 3 tasks<br>
         "stop listening"
       </div>
     </div>
@@ -608,6 +761,126 @@ input[type=range]::-webkit-slider-thumb{
     <div class="modal-sub" id="ciDate">loading…</div>
     <div id="ciItems"></div>
     <button class="ci-confirm" id="ciConfirm">absorb xp</button>
+  </div>
+</div>
+
+<!-- IDLE SCREEN -->
+<div id="idleScreen">
+  <canvas id="idleOrb" width="260" height="260"></canvas>
+  <div class="idle-time" id="idleTime">--:--</div>
+  <div class="idle-date" id="idleDate"></div>
+  <div class="idle-hint">touch to return</div>
+</div>
+
+<!-- SHUTDOWN FLOW -->
+<div class="flow-modal" id="shutdownModal">
+  <div class="flow-box">
+    <div style="font-size:8px;letter-spacing:4px;color:rgba(95,255,212,0.35);margin-bottom:16px">end of day · neural shutdown</div>
+    <div class="flow-progress" id="sdProgress"></div>
+    <div class="flow-step active" id="sdStep0">
+      <div class="flow-q">What did you finish today?</div>
+      <div class="flow-hint">completed tasks, wins, progress made</div>
+      <textarea class="flow-inp" id="sdA0" rows="3" placeholder="I finished…"></textarea>
+    </div>
+    <div class="flow-step" id="sdStep1">
+      <div class="flow-q">What's still pending?</div>
+      <div class="flow-hint">unfinished tasks that carry forward</div>
+      <textarea class="flow-inp" id="sdA1" rows="3" placeholder="Still open…"></textarea>
+    </div>
+    <div class="flow-step" id="sdStep2">
+      <div class="flow-q">What drained you today?</div>
+      <div class="flow-hint">friction points, energy thieves, things to reduce</div>
+      <textarea class="flow-inp" id="sdA2" rows="3" placeholder="What cost energy…"></textarea>
+    </div>
+    <div class="flow-step" id="sdStep3">
+      <div class="flow-q" style="color:rgba(95,255,212,0.7)">Shutdown complete.</div>
+      <div class="flow-hint">your log has been saved. rest well, Boss.</div>
+      <div id="sdSummary" style="font-size:10px;color:rgba(220,245,240,0.55);line-height:1.8;margin-top:8px"></div>
+    </div>
+    <div class="flow-nav">
+      <span class="flow-skip" id="sdSkip">skip</span>
+      <button class="flow-btn" id="sdNext">next →</button>
+    </div>
+  </div>
+</div>
+
+<!-- WEEKLY PLANNING FLOW -->
+<div class="flow-modal" id="planningModal">
+  <div class="flow-box violet">
+    <div style="font-size:8px;letter-spacing:4px;color:rgba(184,138,255,0.35);margin-bottom:16px">monday ritual · weekly planning</div>
+    <div class="flow-progress" id="plProgress"></div>
+    <div class="flow-step active" id="plStep0">
+      <div class="flow-q" style="color:rgba(184,138,255,0.8)">How was last week?</div>
+      <div class="flow-hint">reflect on wins, misses, energy level</div>
+      <textarea class="flow-inp" id="plA0" rows="3" placeholder="Last week was…" style="border-color:rgba(184,138,255,0.15)"></textarea>
+    </div>
+    <div class="flow-step" id="plStep1">
+      <div class="flow-q" style="color:rgba(184,138,255,0.8)">What's your main intention this week?</div>
+      <div class="flow-hint">one sentence, one theme</div>
+      <input class="flow-inp" id="plA1" placeholder="This week I will…" style="border-color:rgba(184,138,255,0.15)">
+    </div>
+    <div class="flow-step" id="plStep2">
+      <div class="flow-q" style="color:rgba(184,138,255,0.8)">What are your 3 focus areas?</div>
+      <div class="flow-hint">projects, habits, or relationships to prioritise</div>
+      <input class="flow-inp" id="plA2a" placeholder="Focus 1…" style="border-color:rgba(184,138,255,0.15);margin-bottom:8px">
+      <input class="flow-inp" id="plA2b" placeholder="Focus 2…" style="border-color:rgba(184,138,255,0.15);margin-bottom:8px">
+      <input class="flow-inp" id="plA2c" placeholder="Focus 3…" style="border-color:rgba(184,138,255,0.15)">
+    </div>
+    <div class="flow-step" id="plStep3">
+      <div class="flow-q" style="color:rgba(184,138,255,0.8)">What will you protect time for?</div>
+      <div class="flow-hint">deep work, rest, relationships — block it now</div>
+      <textarea class="flow-inp" id="plA3" rows="3" placeholder="I'll block time for…" style="border-color:rgba(184,138,255,0.15)"></textarea>
+    </div>
+    <div class="flow-step" id="plStep4">
+      <div class="flow-q" style="color:rgba(95,255,212,0.7)">Week locked in.</div>
+      <div class="flow-hint">your intentions have been saved. make it count, Boss.</div>
+      <div id="plSummary" style="font-size:10px;color:rgba(220,245,240,0.55);line-height:1.8;margin-top:8px"></div>
+    </div>
+    <div class="flow-nav">
+      <span class="flow-skip" id="plSkip">skip</span>
+      <button class="flow-btn" id="plNext" style="border-color:rgba(184,138,255,0.3);color:rgba(184,138,255,0.7)">next →</button>
+    </div>
+  </div>
+</div>
+
+<!-- MIT FLOW -->
+<div class="flow-modal" id="mitModal">
+  <div class="flow-box">
+    <div style="font-size:8px;letter-spacing:4px;color:rgba(95,255,212,0.35);margin-bottom:16px">most important tasks · today</div>
+    <div class="flow-q">Your 3 MITs for today</div>
+    <div class="flow-hint" style="margin-bottom:18px">these are non-negotiable. everything else is secondary.</div>
+    <input class="flow-inp" id="mit1" placeholder="MIT #1…" style="margin-bottom:10px">
+    <input class="flow-inp" id="mit2" placeholder="MIT #2…" style="margin-bottom:10px">
+    <input class="flow-inp" id="mit3" placeholder="MIT #3…">
+    <div class="flow-nav" style="margin-top:20px">
+      <span class="flow-skip" id="mitSkip">cancel</span>
+      <button class="flow-btn" id="mitSave">lock in →</button>
+    </div>
+  </div>
+</div>
+
+<!-- WEEKLY REPORT -->
+<div id="weeklyModal">
+  <div class="weekly-box">
+    <div class="weekly-title">weekly report</div>
+    <div class="weekly-sub" id="weeklyRange">loading…</div>
+    <div id="weeklyContent"></div>
+    <button class="flow-btn" id="weeklyClose" style="margin-top:20px;width:100%;text-align:center">close</button>
+  </div>
+</div>
+
+<!-- COUNTDOWN SET MODAL -->
+<div class="flow-modal" id="cdModal">
+  <div class="flow-box">
+    <div style="font-size:8px;letter-spacing:4px;color:rgba(95,255,212,0.35);margin-bottom:16px">set countdown clock</div>
+    <div class="flow-q">Event name</div>
+    <input class="flow-inp" id="cdName" placeholder="e.g. Product Launch" style="margin-bottom:16px">
+    <div class="flow-q">Target date</div>
+    <input class="flow-inp" type="date" id="cdDate" style="color:rgba(95,255,212,0.7);margin-bottom:4px">
+    <div class="flow-nav" style="margin-top:20px">
+      <span class="flow-skip" id="cdCancel">cancel</span>
+      <button class="flow-btn" id="cdSave">set countdown →</button>
+    </div>
   </div>
 </div>
 
@@ -839,10 +1112,14 @@ window.addEventListener('load',()=>{
 // APP
 // ═════════════════════════════════════════════════════
 function initApp(){
-  checkModal();startClock();initHW();initWx();fetchNews();diagLoop();bindUI();renderHunterUI();renderTasks();
+  checkModal();startClock();initHW();initWx();fetchNews();diagLoop();bindUI();renderHunterUI();renderTasks();renderMITs();loadCountdown();initIdle();checkDailyTriggers();
   setTimeout(()=>{
-    if(API_KEY) speak("All systems online. I'm here, Boss.");
-    else addLog("FRIDAY","Neural interface active. Add a Groq key for full cognition, Boss.",true);
+    if(API_KEY){
+      speak("All systems online. I'm here, Boss.");
+      setTimeout(()=>onThisDay(),3000);
+    } else {
+      addLog("FRIDAY","Neural interface active. Add a Groq key for full cognition, Boss.",true);
+    }
   },400);
 }
 
@@ -1099,9 +1376,433 @@ function setMode(m){
   speak(`${m} mode, Boss.`);
 }
 
+// ═════════════════════════════════════════════════════
+// ON THIS DAY
+// ═════════════════════════════════════════════════════
+async function onThisDay(){
+  if(!API_KEY)return;
+  const now=new Date();
+  const dateStr=now.toLocaleDateString('en-US',{month:'long',day:'numeric'});
+  try{
+    const r=await fetch(GROQ,{method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${API_KEY}`},
+      body:JSON.stringify({model:'llama-3.3-70b-versatile',messages:[
+        {role:'system',content:'You are F.R.I.D.A.Y. Give one genuinely fascinating historical fact that happened on this exact date. One sentence, under 30 words. Start with the year. No preamble.'},
+        {role:'user',content:`What happened on ${dateStr} in history?`}
+      ]})});
+    const d=await r.json();
+    const fact=d.choices[0].message.content;
+    addLog('FRIDAY',`<span style="color:rgba(95,255,212,0.5);font-size:8px;letter-spacing:3px">ON THIS DAY</span><br>${fact}`,true);
+    setTimeout(()=>speak(`On this day in history — ${fact}`),1200);
+  }catch(e){}
+}
+
+// ═════════════════════════════════════════════════════
+// IDLE SCREEN
+// ═════════════════════════════════════════════════════
+let idleTimeout=null,idleActive=false;
+const IDLE_MS=3*60*1000;
+
+function initIdleOrb(){
+  const c=document.getElementById('idleOrb'),ctx=c.getContext('2d');
+  const W=260,cx=130,cy=130;let t=0;
+  function draw(){
+    if(!idleActive){requestAnimationFrame(draw);return;}
+    ctx.clearRect(0,0,W,W);t+=.008;
+    const breathe=0.5+0.5*Math.sin(t*0.6);
+    // outer rings
+    for(let i=3;i>=1;i--){
+      const r=90+i*10+breathe*8;
+      ctx.beginPath();ctx.arc(cx,cy,r,0,Math.PI*2);
+      ctx.strokeStyle=`rgba(95,255,212,${(.018-i*.005)*(0.4+breathe*0.6)})`;ctx.lineWidth=i*3;ctx.stroke();
+    }
+    // rotating arcs
+    for(let i=0;i<3;i++){
+      const ang=t*(0.2+i*0.08)+(i/3)*Math.PI*2;
+      ctx.beginPath();ctx.arc(cx,cy,72+breathe*6,ang,ang+Math.PI*0.5);
+      ctx.strokeStyle=`rgba(95,255,212,${0.12+breathe*0.1})`;ctx.lineWidth=1;ctx.stroke();
+    }
+    // core
+    const grad=ctx.createRadialGradient(cx-10,cy-10,2,cx,cy,38+breathe*10);
+    grad.addColorStop(0,'rgba(210,255,250,0.9)');
+    grad.addColorStop(0.3,`rgba(95,255,212,${0.6+breathe*0.3})`);
+    grad.addColorStop(0.7,`rgba(100,60,220,${0.4+breathe*0.2})`);
+    grad.addColorStop(1,'rgba(0,0,40,0)');
+    ctx.beginPath();ctx.arc(cx,cy,38+breathe*10,0,Math.PI*2);ctx.fillStyle=grad;ctx.fill();
+    requestAnimationFrame(draw);
+  }
+  draw();
+}
+
+function showIdle(){
+  idleActive=true;
+  const el=document.getElementById('idleScreen');el.classList.add('show');
+  updateIdleClock();
+}
+function hideIdle(){
+  idleActive=false;
+  document.getElementById('idleScreen').classList.remove('show');
+  resetIdleTimer();
+}
+function updateIdleClock(){
+  if(!idleActive)return;
+  const now=new Date();
+  document.getElementById('idleTime').innerText=now.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit',hour12:false});
+  document.getElementById('idleDate').innerText=now.toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long'}).toLowerCase();
+  setTimeout(updateIdleClock,1000);
+}
+function resetIdleTimer(){
+  clearTimeout(idleTimeout);
+  idleTimeout=setTimeout(showIdle,IDLE_MS);
+}
+function initIdle(){
+  initIdleOrb();
+  document.getElementById('idleScreen').addEventListener('click',hideIdle);
+  document.addEventListener('click',()=>{if(!idleActive)resetIdleTimer();});
+  document.addEventListener('keydown',()=>{if(!idleActive)resetIdleTimer();});
+  document.getElementById('cmdInput').addEventListener('input',()=>{if(!idleActive)resetIdleTimer();});
+  resetIdleTimer();
+}
+
+// ═════════════════════════════════════════════════════
+// COUNTDOWN CLOCK
+// ═════════════════════════════════════════════════════
+let cdInterval=null;
+function loadCountdown(){
+  const saved=JSON.parse(localStorage.getItem('fri_cd')||'null');
+  if(saved)startCountdownDisplay(saved.name,saved.ts);
+}
+function startCountdownDisplay(name,ts){
+  localStorage.setItem('fri_cd',JSON.stringify({name,ts}));
+  document.getElementById('cdNone').style.display='none';
+  document.getElementById('cdDisplay').style.display='block';
+  document.getElementById('cdEvent').innerText=name.toUpperCase();
+  if(cdInterval)clearInterval(cdInterval);
+  function tick(){
+    const diff=ts-Date.now();
+    if(diff<=0){
+      document.getElementById('cdD').innerText='00';document.getElementById('cdH').innerText='00';
+      document.getElementById('cdM').innerText='00';document.getElementById('cdS').innerText='00';
+      clearInterval(cdInterval);speak(`${name} has arrived, Boss.`);return;
+    }
+    const days=Math.floor(diff/86400000);
+    const hrs=Math.floor((diff%86400000)/3600000);
+    const mins=Math.floor((diff%3600000)/60000);
+    const secs=Math.floor((diff%60000)/1000);
+    document.getElementById('cdD').innerText=String(days).padStart(2,'0');
+    document.getElementById('cdH').innerText=String(hrs).padStart(2,'0');
+    document.getElementById('cdM').innerText=String(mins).padStart(2,'0');
+    document.getElementById('cdS').innerText=String(secs).padStart(2,'0');
+    const digits=document.getElementById('cdDigits');
+    if(days===0)digits.classList.add('cd-urgent');else digits.classList.remove('cd-urgent');
+  }
+  tick();cdInterval=setInterval(tick,1000);
+}
+function openCdModal(){
+  const saved=JSON.parse(localStorage.getItem('fri_cd')||'null');
+  if(saved){document.getElementById('cdName').value=saved.name;const d=new Date(saved.ts);document.getElementById('cdDate').value=d.toISOString().split('T')[0];}
+  document.getElementById('cdModal').classList.add('show');
+}
+
+// ═════════════════════════════════════════════════════
+// MIT PROTOCOL
+// ═════════════════════════════════════════════════════
+function getMITs(){return JSON.parse(localStorage.getItem('fri_mit')||'{"date":"","tasks":[],"done":[]}');}
+function saveMITs(d){localStorage.setItem('fri_mit',JSON.stringify(d));}
+function renderMITs(){
+  const d=getMITs();const td=today();
+  const el=document.getElementById('mitList');
+  document.getElementById('mitDate').innerText=td;
+  if(!d.tasks.length||d.date!==td){
+    el.innerHTML='<div style="font-size:9px;color:rgba(220,245,240,0.3);letter-spacing:1px">say "mit" to set today\'s top 3 tasks</div>';return;
+  }
+  el.innerHTML=d.tasks.map((t,i)=>`
+    <div class="mit-item">
+      <div class="mit-num">0${i+1}</div>
+      <div class="mit-text ${d.done[i]?'mit-done':''}">${t}</div>
+      <div class="mit-check ${d.done[i]?'done':''}" onclick="toggleMIT(${i})"></div>
+    </div>`).join('');
+}
+window.toggleMIT=i=>{const d=getMITs();d.done[i]=!d.done[i];saveMITs(d);renderMITs();
+  const allDone=d.done.filter(Boolean).length===d.tasks.length;
+  if(allDone)speak("All three MITs complete, Boss. Outstanding.");};
+function openMITModal(){
+  const d=getMITs();const td=today();
+  if(d.date===td&&d.tasks.length){document.getElementById('mit1').value=d.tasks[0]||'';document.getElementById('mit2').value=d.tasks[1]||'';document.getElementById('mit3').value=d.tasks[2]||'';}
+  else{document.getElementById('mit1').value='';document.getElementById('mit2').value='';document.getElementById('mit3').value='';}
+  document.getElementById('mitModal').classList.add('show');
+  setTimeout(()=>document.getElementById('mit1').focus(),100);
+}
+function saveMITModal(){
+  const t1=document.getElementById('mit1').value.trim();
+  const t2=document.getElementById('mit2').value.trim();
+  const t3=document.getElementById('mit3').value.trim();
+  const tasks=[t1,t2,t3].filter(Boolean);
+  if(!tasks.length){toast("Enter at least one MIT, Boss.");return;}
+  saveMITs({date:today(),tasks,done:tasks.map(()=>false)});
+  document.getElementById('mitModal').classList.remove('show');
+  renderMITs();
+  speak(`${tasks.length} MITs locked in for today, Boss. ${tasks[0]} leads the charge.`);
+}
+
+// ═════════════════════════════════════════════════════
+// END-OF-DAY SHUTDOWN
+// ═════════════════════════════════════════════════════
+let sdStep=0;const SD_STEPS=4;
+function initFlowDots(prefix,n){
+  const el=document.getElementById(prefix+'Progress');el.innerHTML='';
+  for(let i=0;i<n-1;i++){const d=document.createElement('div');d.className='flow-dot'+(i===0?' active':'');d.id=prefix+'Dot'+i;el.appendChild(d);}
+}
+function updateFlowDots(prefix,step,total){
+  for(let i=0;i<total-1;i++){
+    const d=document.getElementById(prefix+'Dot'+i);if(!d)continue;
+    d.className='flow-dot'+(i<step?' done':i===step?' active':'');
+  }
+}
+function openShutdown(){
+  sdStep=0;initFlowDots('sd',SD_STEPS);
+  ['sdStep0','sdStep1','sdStep2','sdStep3'].forEach((id,i)=>{document.getElementById(id).className='flow-step'+(i===0?' active':'');});
+  ['sdA0','sdA1','sdA2'].forEach(id=>{document.getElementById(id).value='';});
+  document.getElementById('sdNext').innerText='next →';
+  document.getElementById('shutdownModal').classList.add('show');
+  speak("End of day shutdown initiated. What did you finish today, Boss?");
+  setTimeout(()=>document.getElementById('sdA0').focus(),200);
+}
+function sdAdvance(){
+  if(sdStep<2){
+    sdStep++;
+    ['sdStep0','sdStep1','sdStep2','sdStep3'].forEach((id,i)=>{document.getElementById(id).className='flow-step'+(i===sdStep?' active':'');});
+    updateFlowDots('sd',sdStep,SD_STEPS);
+    const prompts=["Now, what's still pending?","And what drained your energy today, Boss?"];
+    if(sdStep<=2)speak(prompts[sdStep-1]);
+    if(sdStep===2)document.getElementById('sdNext').innerText='complete shutdown';
+    setTimeout(()=>document.getElementById('sdStep'+sdStep).querySelector('.flow-inp')?.focus(),100);
+  } else {
+    // Save and show summary
+    const finished=document.getElementById('sdA0').value.trim();
+    const pending=document.getElementById('sdA1').value.trim();
+    const drained=document.getElementById('sdA2').value.trim();
+    const log=JSON.parse(localStorage.getItem('fri_shutdown_log')||'[]');
+    log.push({date:today(),finished,pending,drained});
+    if(log.length>30)log.shift();
+    localStorage.setItem('fri_shutdown_log',JSON.stringify(log));
+    // Show pending as tasks
+    if(pending){pending.split(/[,\n]+/).map(t=>t.trim()).filter(Boolean).forEach(t=>{if(!reminders.includes(t)){reminders.push(t);localStorage.setItem('fri_rem',JSON.stringify(reminders));}});renderTasks();}
+    document.getElementById('sdSummary').innerHTML=
+      `<b style="color:rgba(95,255,212,0.5)">finished:</b> ${finished||'—'}<br><br>`+
+      `<b style="color:rgba(184,138,255,0.5)">pending:</b> ${pending||'—'}<br><br>`+
+      `<b style="color:rgba(255,120,140,0.5)">drained by:</b> ${drained||'—'}`;
+    document.getElementById('sdStep3').className='flow-step active';
+    ['sdStep0','sdStep1','sdStep2'].forEach(id=>{document.getElementById(id).className='flow-step';});
+    document.getElementById('sdNext').innerText='close';
+    document.getElementById('sdNext').onclick=()=>{document.getElementById('shutdownModal').classList.remove('show');document.getElementById('sdNext').onclick=sdAdvance;};
+    speak("Shutdown complete. Pending items moved to your task registry. Rest well, Boss.");
+  }
+}
+
+// ═════════════════════════════════════════════════════
+// WEEKLY PLANNING RITUAL
+// ═════════════════════════════════════════════════════
+let plStep=0;const PL_STEPS=5;
+function openPlanning(){
+  plStep=0;initFlowDots('pl',PL_STEPS);
+  ['plStep0','plStep1','plStep2','plStep3','plStep4'].forEach((id,i)=>{document.getElementById(id).className='flow-step'+(i===0?' active':'');});
+  ['plA0','plA1','plA2a','plA2b','plA2c','plA3'].forEach(id=>{document.getElementById(id).value='';});
+  document.getElementById('plNext').innerText='next →';
+  document.getElementById('planningModal').classList.add('show');
+  speak("Monday planning ritual. How was last week overall, Boss?");
+  setTimeout(()=>document.getElementById('plA0').focus(),200);
+}
+function plAdvance(){
+  if(plStep<3){
+    plStep++;
+    ['plStep0','plStep1','plStep2','plStep3','plStep4'].forEach((id,i)=>{document.getElementById(id).className='flow-step'+(i===plStep?' active':'');});
+    updateFlowDots('pl',plStep,PL_STEPS);
+    const prompts=["Good. What is your main intention for this week?","Excellent. Name your 3 focus areas.","And what will you protect time for?"];
+    if(plStep<=3)speak(prompts[plStep-1]);
+    if(plStep===3)document.getElementById('plNext').innerText='lock in week';
+  } else {
+    const review=document.getElementById('plA0').value.trim();
+    const intention=document.getElementById('plA1').value.trim();
+    const f1=document.getElementById('plA2a').value.trim();
+    const f2=document.getElementById('plA2b').value.trim();
+    const f3=document.getElementById('plA2c').value.trim();
+    const protect=document.getElementById('plA3').value.trim();
+    const plan={date:today(),review,intention,focuses:[f1,f2,f3].filter(Boolean),protect};
+    const log=JSON.parse(localStorage.getItem('fri_planning_log')||'[]');
+    log.push(plan);if(log.length>12)log.shift();
+    localStorage.setItem('fri_planning_log',JSON.stringify(log));
+    // Pin intention as a reminder
+    if(intention&&!reminders.includes('INTENTION: '+intention)){reminders.unshift('INTENTION: '+intention);localStorage.setItem('fri_rem',JSON.stringify(reminders));renderTasks();}
+    document.getElementById('plSummary').innerHTML=
+      `<b style="color:rgba(184,138,255,0.5)">intention:</b> ${intention||'—'}<br><br>`+
+      `<b style="color:rgba(95,255,212,0.5)">focuses:</b> ${[f1,f2,f3].filter(Boolean).join(' · ')||'—'}<br><br>`+
+      `<b style="color:rgba(95,255,212,0.4)">protected time:</b> ${protect||'—'}`;
+    document.getElementById('plStep4').className='flow-step active';
+    ['plStep0','plStep1','plStep2','plStep3'].forEach(id=>{document.getElementById(id).className='flow-step';});
+    document.getElementById('plNext').innerText='close';
+    document.getElementById('plNext').onclick=()=>{document.getElementById('planningModal').classList.remove('show');document.getElementById('plNext').onclick=plAdvance;};
+    speak(`Week locked in, Boss. ${intention?'Your intention: '+intention+'.':''} Make it count.`);
+  }
+}
+
+// ═════════════════════════════════════════════════════
+// WEEKLY REPORT
+// ═════════════════════════════════════════════════════
+function openWeeklyReport(){
+  const d=getHD();
+  const now=new Date();
+  // Get start of this week (Monday)
+  const dow=now.getDay();const diff=dow===0?6:dow-1;
+  const monday=new Date(now);monday.setDate(now.getDate()-diff);monday.setHours(0,0,0,0);
+  const sunday=new Date(monday);sunday.setDate(monday.getDate()+6);
+
+  const range=`${monday.toLocaleDateString('en-GB',{day:'numeric',month:'short'})} – ${sunday.toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'})}`.toLowerCase();
+  document.getElementById('weeklyRange').innerText=range;
+
+  // Calculate stats for the week
+  let daysChecked=0,weekXP=0,habitsThisWeek={};
+  d.habits.forEach((_,hi)=>{habitsThisWeek[hi]=0;});
+  for(let i=0;i<7;i++){
+    const day=new Date(monday);day.setDate(monday.getDate()+i);
+    const ds=d2s(day);
+    if(d.history[ds]&&d.history[ds].length>0){
+      daysChecked++;
+      d.history[ds].forEach(hi=>{
+        weekXP+=d.habits[hi]?d.habits[hi].xp:0;
+        if(habitsThisWeek[hi]!==undefined)habitsThisWeek[hi]++;
+      });
+    }
+  }
+
+  // Shutdown log for the week
+  const sdLog=JSON.parse(localStorage.getItem('fri_shutdown_log')||'[]');
+  const weekSd=sdLog.filter(e=>{const dt=new Date(e.date);return dt>=monday&&dt<=sunday;});
+
+  // Planning log
+  const plLog=JSON.parse(localStorage.getItem('fri_planning_log')||'[]');
+  const weekPl=plLog.find(e=>{const dt=new Date(e.date);return dt>=monday&&dt<=sunday;});
+
+  // MIT stats
+  const mitLog=getMITs();
+  const mitDone=mitLog.date===today()?mitLog.done.filter(Boolean).length:0;
+  const mitTotal=mitLog.date===today()?mitLog.tasks.length:0;
+
+  let html=`
+    <div class="weekly-section">
+      <div class="weekly-section-title">hunter system</div>
+      <div class="weekly-stat"><span>days checked in</span><span>${daysChecked} / 7</span></div>
+      <div class="weekly-stat"><span>xp earned this week</span><span>+${weekXP}</span></div>
+      <div class="weekly-stat"><span>current streak</span><span>${d.streak} days</span></div>
+      <div class="weekly-stat"><span>total xp</span><span>${d.totalXp}</span></div>
+      <div class="weekly-stat"><span>rank</span><span>${RANKS[getRankIdx(d.totalXp)]}-rank</span></div>
+    </div>
+    <div class="weekly-section">
+      <div class="weekly-section-title">habit breakdown</div>
+      ${d.habits.map((h,hi)=>{
+        const cnt=habitsThisWeek[hi]||0;
+        const pct=Math.round((cnt/7)*100);
+        return `<div class="weekly-habit-row">
+          <span>${h.name}</span>
+          <div class="weekly-bar"><div class="weekly-bar-fill" style="width:${pct}%"></div></div>
+          <span style="min-width:32px;text-align:right;color:rgba(184,138,255,0.7)">${cnt}/7</span>
+        </div>`;}).join('')}
+    </div>`;
+
+  if(weekPl){
+    html+=`<div class="weekly-section">
+      <div class="weekly-section-title">week intention</div>
+      <div style="font-size:11px;color:rgba(220,245,240,0.7);line-height:1.6;padding:6px 0">${weekPl.intention||'—'}</div>
+      ${weekPl.focuses.length?`<div style="font-size:9px;color:rgba(95,255,212,0.45);margin-top:6px;letter-spacing:1px">focuses: ${weekPl.focuses.join(' · ')}</div>`:''}
+    </div>`;
+  }
+
+  if(weekSd.length){
+    html+=`<div class="weekly-section">
+      <div class="weekly-section-title">shutdown logs (${weekSd.length} days)</div>
+      ${weekSd.slice(-3).map(e=>`<div style="padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.03)">
+        <div style="font-size:7.5px;color:rgba(95,255,212,0.35);letter-spacing:2px;margin-bottom:3px">${e.date}</div>
+        <div style="font-size:9.5px;color:rgba(220,245,240,0.55);line-height:1.5">✓ ${e.finished||'—'}</div>
+      </div>`).join('')}
+    </div>`;
+  }
+
+  html+=`<div class="weekly-section">
+    <div class="weekly-section-title">task registry</div>
+    <div style="font-size:10px;color:rgba(220,245,240,0.55);line-height:1.8">${reminders.length?reminders.join('<br>'):'No open tasks.'}</div>
+  </div>`;
+
+  document.getElementById('weeklyContent').innerHTML=html;
+  document.getElementById('weeklyModal').classList.add('show');
+  speak(`Weekly report ready, Boss. ${daysChecked} check-in days, ${weekXP} xp earned this week.`);
+}
+
+// ═════════════════════════════════════════════════════
+// TIMEBOX ASSISTANT
+// ═════════════════════════════════════════════════════
+async function timeboxDay(taskList){
+  if(!API_KEY){speak("Need my neural key for that, Boss.");return;}
+  const tasks=taskList||reminders.join(', ');
+  if(!tasks){speak("No tasks in your registry to schedule, Boss. Add some first.");return;}
+  speak("Generating your time-boxed schedule, Boss.");
+  document.getElementById('stag').innerText='scheduling';
+  try{
+    const now=new Date();const hour=now.getHours();
+    const r=await fetch(GROQ,{method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${API_KEY}`},
+      body:JSON.stringify({model:'llama-3.3-70b-versatile',messages:[
+        {role:'system',content:'You are F.R.I.D.A.Y. creating a time-boxed schedule. Output ONLY a JSON array of objects with keys "time" (e.g. "9:00") and "task" (e.g. "Write report draft"). Include realistic breaks. No markdown, no explanation, pure JSON array only.'},
+        {role:'user',content:`Current time: ${hour}:00. Tasks to schedule: ${tasks}. Create a realistic schedule for the rest of today starting from ${hour}:00.`}
+      ]})});
+    const data=await r.json();
+    let raw=data.choices[0].message.content.trim();
+    if(raw.startsWith('```'))raw=raw.replace(/```json?|```/g,'').trim();
+    const slots=JSON.parse(raw);
+    const el=document.getElementById('timeboxList');
+    el.innerHTML=slots.map(s=>`<div class="tb-slot"><div class="tb-time">${s.time}</div><div class="tb-task">${s.task}</div></div>`).join('');
+    speak(`Schedule generated. ${slots.length} blocks, starting at ${slots[0]?.time||'now'}, Boss.`);
+  }catch(e){
+    document.getElementById('timeboxList').innerHTML='<div style="font-size:9px;color:rgba(255,120,140,0.5)">scheduling failed — try again</div>';
+    speak("Couldn't generate the schedule, Boss. Try again.");
+  }
+  document.getElementById('stag').innerText='online';
+}
+
+// ═════════════════════════════════════════════════════
+// SMART MORNING / PLANNING TRIGGERS
+// ═════════════════════════════════════════════════════
+function checkDailyTriggers(){
+  const now=new Date();const hour=now.getHours();const dow=now.getDay();
+  const lastTrigger=localStorage.getItem('fri_trigger_date')||'';
+  if(lastTrigger===today())return;
+  localStorage.setItem('fri_trigger_date',today());
+  // Monday planning
+  if(dow===1&&hour>=7&&hour<=11){
+    setTimeout(()=>{speak("Good morning, Boss. It's Monday — time for your weekly planning ritual. Say 'weekly planning' when you're ready.");},3000);
+  }
+  // Daily MIT prompt (weekdays, morning)
+  if(dow>=1&&dow<=5&&hour>=7&&hour<=10){
+    const mits=getMITs();
+    if(mits.date!==today()){
+      setTimeout(()=>{speak("Boss, you haven't set your Most Important Tasks for today. Say 'MIT' when ready.");},5000);
+    }
+  }
+  // Sunday report
+  if(dow===0&&hour>=9){
+    setTimeout(()=>{speak("It's Sunday, Boss. Your weekly report is ready. Say 'weekly report' to review.");},4000);
+  }
+}
+
 async function handleInput(cmd){
   const q=cmd.toLowerCase().trim();if(!q)return;
   if(q.includes('check in')||q.includes('daily check')){openCheckin();return;}
+  if(q==='shutdown'||q.includes('end of day')||q.includes('shut down')){openShutdown();return;}
+  if(q.includes('weekly report')||q.includes('week report')){openWeeklyReport();return;}
+  if(q.includes('weekly planning')||q.includes('monday planning')||q.includes('weekly ritual')){openPlanning();return;}
+  if(q==='mit'||q.includes('most important task')||q.includes('set my mit')){openMITModal();return;}
+  if(q.includes('timebox')||q.includes('time box')||q.includes('schedule my day')){
+    let tasks=q;['friday','timebox','time box','schedule my day','my day'].forEach(w=>{tasks=tasks.replace(new RegExp('\\b'+w+'\\b','gi'),'');});
+    timeboxDay(tasks.trim()||null);return;
+  }
+  if(q.includes('countdown')||q.includes('set countdown')){openCdModal();return;}
   if(q.includes('research')||q.includes('search for')){
     let t=q;['friday','research','search for','search'].forEach(w=>{t=t.replace(new RegExp('\\b'+w+'\\b','gi'),'');});
     const topic=t.trim()||'neural networks';
@@ -1146,6 +1847,33 @@ function toast(msg){const el=document.getElementById('toast');el.innerText=msg;e
 
 function bindUI(){
   document.getElementById('newsBtn').onclick=openNewsWindow;
+  // Shutdown flow
+  document.getElementById('sdNext').onclick=sdAdvance;
+  document.getElementById('sdSkip').onclick=()=>document.getElementById('shutdownModal').classList.remove('show');
+  // Planning flow
+  document.getElementById('plNext').onclick=plAdvance;
+  document.getElementById('plSkip').onclick=()=>document.getElementById('planningModal').classList.remove('show');
+  // MIT
+  document.getElementById('mitSave').onclick=saveMITModal;
+  document.getElementById('mitSkip').onclick=()=>document.getElementById('mitModal').classList.remove('show');
+  ['mit1','mit2','mit3'].forEach((id,i)=>{document.getElementById(id).onkeydown=e=>{if(e.key==='Enter'&&i<2)document.getElementById(['mit1','mit2','mit3'][i+1]).focus();else if(e.key==='Enter')saveMITModal();};});
+  // Countdown
+  document.getElementById('cdSave').onclick=()=>{
+    const name=document.getElementById('cdName').value.trim();
+    const dateVal=document.getElementById('cdDate').value;
+    if(!name||!dateVal){toast("Enter both a name and date, Boss.");return;}
+    const ts=new Date(dateVal+'T23:59:59').getTime();
+    startCountdownDisplay(name,ts);
+    document.getElementById('cdModal').classList.remove('show');
+    speak(`Countdown set for ${name}, Boss.`);
+  };
+  document.getElementById('cdCancel').onclick=()=>document.getElementById('cdModal').classList.remove('show');
+  // Weekly report close
+  document.getElementById('weeklyClose').onclick=()=>document.getElementById('weeklyModal').classList.remove('show');
+  // Close flow modals on backdrop click
+  ['shutdownModal','planningModal','mitModal','cdModal','weeklyModal'].forEach(id=>{
+    document.getElementById(id).addEventListener('click',e=>{if(e.target===document.getElementById(id))document.getElementById(id).classList.remove('show');});
+  });
   document.getElementById('saveKey').onclick=()=>{
     const v=document.getElementById('apiKey').value.trim();
     if(!v){document.getElementById('apiModal').classList.remove('show');addLog("FRIDAY","Light mode active.",true);return;}
