@@ -10,7 +10,7 @@
 :root{--t:#5fffd4;--v:#b88aff;--bg:#030208;--ink:rgba(220,245,240,0.9);--tb:rgba(95,255,212,0.1);--vb:rgba(184,138,255,0.1)}
 html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--ink);font-family:"Share Tech Mono",monospace}
 #bgc{position:fixed;inset:0;z-index:0;pointer-events:none}
-body::after{content:"";position:fixed;inset:0;z-index:9999;pointer-events:none;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.04) 2px,rgba(0,0,0,0.04) 4px)}
+body::after{content:"";position:absolute;inset:0;z-index:9999;pointer-events:none;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.04) 2px,rgba(0,0,0,0.04) 4px)}
 
 /* BOOT */
 #boot{position:fixed;inset:0;z-index:5000;background:#020106;display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity 1.2s ease}
@@ -569,473 +569,1053 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:10px;heigh
 
 <script>
 // ═══════════════════════════════════
-// STATE
+// DUAL ENGINE COGNITIVE SETTINGS (GEMINI API & GROQ)
 // ═══════════════════════════════════
-let API_KEY=localStorage.getItem("fri_key")||"";
-const GROQ="https://api.groq.com/openai/v1/chat/completions";
-let loopOn=false,busy=false,timerInt=null,cdInt=null;
-let wx={temp:null,aqi:null,cond:"--"};
-let reminders=JSON.parse(localStorage.getItem("fri_rem")||"[]");
-let tIdx=0,vol=0.8,orbState="idle",newsHL=[];
-const pl=[{t:"stark expo mix",u:"https://www.youtube.com/results?search_query=iron+man+stark+expo+soundtrack"},{t:"industrial core",u:"https://www.youtube.com/watch?v=D58T0_J1J3Y"},{t:"lofi uplink",u:"https://www.youtube.com/watch?v=jfKfPfyJRdk"}];
+const apiKey = ""; // Built-in platform key populated at runtime for Gemini Core
+let API_KEY = localStorage.getItem("fri_key") || ""; // Pasted custom Groq Key
+const GROQ = "https://api.groq.com/openai/v1/chat/completions";
 
-// ═══════════════════════════════════
-// PANEL DRAG
-// ═══════════════════════════════════
-let drag=null,zTop=300;
-document.querySelectorAll(".pw").forEach(p=>{
-  p.querySelector(".pwh").addEventListener("mousedown",e=>{
-    if(e.target.classList.contains("pwx"))return;
-    const r=p.getBoundingClientRect();drag={p,ox:e.clientX-r.left,oy:e.clientY-r.top};
-  });
-  p.addEventListener("mousedown",()=>front(p));
-});
-document.addEventListener("mousemove",e=>{if(!drag)return;drag.p.style.left=(e.clientX-drag.ox)+"px";drag.p.style.top=(e.clientY-drag.oy)+"px";drag.p.style.transform="none";drag.p.style.right="auto";drag.p.style.bottom="auto";});
-document.addEventListener("mouseup",()=>drag=null);
-function front(p){p.style.zIndex=++zTop;}
-function togP(id){const p=document.getElementById(id);p.classList.contains("show")?p.classList.remove("show"):(p.classList.add("show"),front(p));}
-function closeP(id){document.getElementById(id).classList.remove("show");}
-function openO(id){document.getElementById(id).classList.add("show");}
-function closeO(id){document.getElementById(id).classList.remove("show");}
-
-// ═══════════════════════════════════
-// PARTICLES
-// ═══════════════════════════════════
-function initBg(){
-  const c=document.getElementById("bgc"),ctx=c.getContext("2d");
-  const rs=()=>{c.width=innerWidth;c.height=innerHeight;};rs();addEventListener("resize",rs);
-  const pts=[];
-  for(let i=0;i<48;i++)pts.push({x:Math.random()*innerWidth,y:Math.random()*innerHeight,vx:(Math.random()-.5)*.1,vy:(Math.random()-.5)*.1,r:Math.random()*1.1+.3,t:Math.random()>.5,a:Math.random()*.2+.04,ph:Math.random()*Math.PI*2});
-  function draw(){ctx.clearRect(0,0,c.width,c.height);const t=Date.now()*.001;
-    pts.forEach(p=>{p.x+=p.vx;p.y+=p.vy;if(p.x<0)p.x=c.width;if(p.x>c.width)p.x=0;if(p.y<0)p.y=c.height;if(p.y>c.height)p.y=0;
-      const a=p.a*(.5+.5*Math.sin(t*.55+p.ph));ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);ctx.fillStyle=p.t?`rgba(95,255,212,${a})`:`rgba(184,138,255,${a})`;ctx.fill();});
-    for(let i=0;i<pts.length;i++)for(let j=i+1;j<pts.length;j++){const dx=pts[i].x-pts[j].x,dy=pts[i].y-pts[j].y,d=Math.sqrt(dx*dx+dy*dy);if(d<80){ctx.beginPath();ctx.moveTo(pts[i].x,pts[i].y);ctx.lineTo(pts[j].x,pts[j].y);ctx.strokeStyle=`rgba(95,255,212,${(1-d/80)*.03})`;ctx.lineWidth=.5;ctx.stroke();}}
-    requestAnimationFrame(draw);}draw();}
-
-// ═══════════════════════════════════
-// ORB CANVAS
-// ═══════════════════════════════════
-function initOrb(){
-  const c=document.getElementById("oc"),ctx=c.getContext("2d"),W=240,cx=120,cy=120;let t=0;
-  function draw(){ctx.clearRect(0,0,W,W);t+=.014;
-    const C=orbState==="listening"?{p:"rgba(255,90,130,",s:"rgba(255,60,100,",g:"rgba(255,90,130,"}:
-             orbState==="speaking"?{p:"rgba(95,255,212,",s:"rgba(0,210,180,",g:"rgba(95,255,212,"}:
-                                   {p:"rgba(95,255,212,",s:"rgba(184,138,255,",g:"rgba(120,200,255,"};
-    for(let i=3;i>=1;i--){const r=98+i*11+Math.sin(t*.7+i)*4,a=(.022-i*.006)*(orbState!=="idle"?1.8:1);ctx.beginPath();ctx.arc(cx,cy,r,0,Math.PI*2);ctx.strokeStyle=C.g+a+")";ctx.lineWidth=i*2.5;ctx.stroke();}
-    for(let i=0;i<4;i++){const ang=t*(.28+i*.1)+(i/4)*Math.PI*2,r2=80+Math.sin(t+i)*5;ctx.beginPath();ctx.arc(cx,cy,r2,ang,ang+Math.PI*.55);const g=ctx.createLinearGradient(cx-r2,cy-r2,cx+r2,cy+r2);g.addColorStop(0,"transparent");g.addColorStop(.5,C.p+(orbState!=="idle"?.34:.17)+")");g.addColorStop(1,"transparent");ctx.strokeStyle=g;ctx.lineWidth=1;ctx.stroke();}
-    for(let i=0;i<3;i++){const ang=-t*(.22+i*.08)+(i/3)*Math.PI*2,r2=65+Math.sin(t*1.1+i)*4;ctx.beginPath();ctx.arc(cx,cy,r2,ang,ang+Math.PI*.4);ctx.strokeStyle=C.s+(orbState!=="idle"?.25:.1)+")";ctx.lineWidth=.8;ctx.stroke();}
-    const wA=orbState!=="idle"?10:3.5;
-    for(let w=0;w<4;w++){const yO=cy-15+w*10;ctx.beginPath();for(let s=0;s<=46;s++){const px=cx-46+(s/46)*92,py=yO+wA*Math.sin(t*2.5+s*.45+w*1.2)*Math.sin(s*.2);s===0?ctx.moveTo(px,py):ctx.lineTo(px,py);}ctx.strokeStyle=w%2===0?C.p+(.07+wA*.005)+")":C.s+(.05+wA*.003)+")";ctx.lineWidth=.7;ctx.stroke();}
-    const cR=40+Math.sin(t*1.8)*(orbState==="idle"?1.5:3.5);
-    const gr=ctx.createRadialGradient(cx-10,cy-10,2,cx,cy,cR);
-    if(orbState==="listening"){gr.addColorStop(0,"rgba(255,220,230,.94)");gr.addColorStop(.3,"rgba(255,100,130,.86)");gr.addColorStop(.72,"rgba(190,20,50,.68)");gr.addColorStop(1,"rgba(100,0,20,0)");}
-    else if(orbState==="speaking"){gr.addColorStop(0,"rgba(210,255,250,.94)");gr.addColorStop(.3,"rgba(95,255,212,.86)");gr.addColorStop(.72,"rgba(0,160,140,.68)");gr.addColorStop(1,"rgba(0,80,70,0)");}
-    else{gr.addColorStop(0,"rgba(220,255,252,.9)");gr.addColorStop(.2,"rgba(95,255,212,.62)");gr.addColorStop(.55,"rgba(130,80,230,.52)");gr.addColorStop(.85,"rgba(40,10,110,.28)");gr.addColorStop(1,"rgba(0,0,40,0)");}
-    ctx.beginPath();ctx.arc(cx,cy,cR,0,Math.PI*2);ctx.fillStyle=gr;ctx.fill();
-    const sg=ctx.createRadialGradient(cx-12,cy-12,1,cx-6,cy-6,cR*.5);sg.addColorStop(0,"rgba(255,255,255,.34)");sg.addColorStop(1,"rgba(255,255,255,0)");ctx.beginPath();ctx.arc(cx,cy,cR,0,Math.PI*2);ctx.fillStyle=sg;ctx.fill();
-    const cg=ctx.createRadialGradient(cx,cy,cR-2,cx,cy,cR+17);cg.addColorStop(0,C.p+(orbState!=="idle"?.15:.06)+")");cg.addColorStop(1,"transparent");ctx.beginPath();ctx.arc(cx,cy,cR+17,0,Math.PI*2);ctx.fillStyle=cg;ctx.fill();
-    requestAnimationFrame(draw);}draw();
-  document.getElementById("oc").addEventListener("click",doSingleListen);}
-
-// WAVE
-function initWave(){const c=document.getElementById("wv"),ctx=c.getContext("2d");c.width=180;c.height=22;let t=0,act=false;window._sw=v=>act=v;
-  function draw(){ctx.clearRect(0,0,180,22);t+=.04;const amp=act?8:2;
-    [[`rgba(95,255,212,${act?.38:.09})`,0],[`rgba(184,138,255,${act?.26:.06})`,Math.PI]].forEach(([col,ph])=>{ctx.beginPath();for(let x=0;x<=180;x++){const y=11+amp*Math.sin(t*(act?1.7:.55)+x*.04+ph)*Math.sin(x*.024+t*.25);x===0?ctx.moveTo(x,y):ctx.lineTo(x,y);}ctx.strokeStyle=col;ctx.lineWidth=1.2;ctx.stroke();});requestAnimationFrame(draw);}draw();}
-
-// IDLE ORB
-let idleActive=false,idleTO=null;
-function initIdleOrb(){const c=document.getElementById("idleOrb"),ctx=c.getContext("2d"),cx=100,cy=100;let t=0;
-  function draw(){if(!idleActive){requestAnimationFrame(draw);return;}ctx.clearRect(0,0,200,200);t+=.007;const b=.5+.5*Math.sin(t*.55);
-    for(let i=3;i>=1;i--){const r=82+i*9+b*7;ctx.beginPath();ctx.arc(cx,cy,r,0,Math.PI*2);ctx.strokeStyle=`rgba(95,255,212,${(.015-i*.004)*(0.4+b*.6)})`;ctx.lineWidth=i*3;ctx.stroke();}
-    for(let i=0;i<3;i++){const ang=t*(.18+i*.07)+(i/3)*Math.PI*2;ctx.beginPath();ctx.arc(cx,cy,64+b*5,ang,ang+Math.PI*.5);ctx.strokeStyle=`rgba(95,255,212,${.09+b*.07})`;ctx.lineWidth=.9;ctx.stroke();}
-    const r=34+b*9;const g=ctx.createRadialGradient(cx-9,cy-9,2,cx,cy,r);g.addColorStop(0,"rgba(210,255,250,.88)");g.addColorStop(.3,`rgba(95,255,212,${.52+b*.28})`);g.addColorStop(.7,`rgba(100,60,220,${.38+b*.16})`);g.addColorStop(1,"rgba(0,0,40,0)");ctx.beginPath();ctx.arc(cx,cy,r,0,Math.PI*2);ctx.fillStyle=g;ctx.fill();
-    requestAnimationFrame(draw);}draw();}
-function showIdle(){idleActive=true;document.getElementById("idle").classList.add("show");tickIdleClock();}
-function hideIdle(){idleActive=false;document.getElementById("idle").classList.remove("show");resetIdleTO();}
-function tickIdleClock(){if(!idleActive)return;const n=new Date();document.getElementById("iClk").innerText=n.toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit",hour12:false});document.getElementById("iDay").innerText=n.toLocaleDateString("en-GB",{weekday:"long",day:"numeric",month:"long"}).toLowerCase();setTimeout(tickIdleClock,1000);}
-function resetIdleTO(){clearTimeout(idleTO);idleTO=setTimeout(showIdle,3*60*1000);}
-function initIdle(){initIdleOrb();document.getElementById("idle").addEventListener("click",hideIdle);["click","keydown","mousemove"].forEach(ev=>document.addEventListener(ev,()=>{if(!idleActive)resetIdleTO();},{passive:true}));resetIdleTO();}
-
-// ═══════════════════════════════════
-// BOOT
-// ═══════════════════════════════════
-const BOOT=[
-  {t:"allocating neural buffer…",c:"ok",d:0},{t:"mapping cortex topology…",c:"ok",d:240},
-  {t:"bioluminescent interface: active",c:"ok",d:460},{t:"voice synthesis: calibrating…",c:"ok",d:670},
-  {t:"groq ai uplink: establishing…",c:"ok",d:880},{t:"geolocation mesh: online",c:"ok",d:1060},
-  {t:"weather cortex: ready",c:"ok",d:1230},{t:"hunter system: calibrated",c:"ok",d:1390},
-  {t:"speech engine: standby",c:"w",d:1540},{t:"particle renderer: loaded",c:"ok",d:1680},
-  {t:"f.r.i.d.a.y. — awake",c:"ok",d:1900},
+let loopOn = false, busy = false, transactionActive = false, timerInt = null, cdInt = null;
+let wx = {temp: null, aqi: null, cond: "--"};
+let reminders = JSON.parse(localStorage.getItem("fri_rem") || "[]");
+let tIdx = 0, vol = 0.8, orbState = "idle", newsHL = [];
+const pl = [
+  {t:"stark expo mix", u:"https://www.youtube.com/results?search_query=iron+man+stark+expo+soundtrack"},
+  {t:"industrial core", u:"https://www.youtube.com/watch?v=D58T0_J1J3Y"},
+  {t:"lofi uplink", u:"https://www.youtube.com/watch?v=jfKfPfyJRdk"}
 ];
-let bootDone=false;
-function runBoot(){const log=document.getElementById("bLog"),fill=document.getElementById("bFill"),n=BOOT.length;
-  BOOT.forEach((l,i)=>{setTimeout(()=>{const el=document.createElement("div");el.className="bl "+l.c;el.innerText=l.t;log.appendChild(el);setTimeout(()=>el.classList.add("s"),20);fill.style.width=Math.round(((i+1)/n)*100)+"%";
-    if(i===n-1)setTimeout(()=>{document.getElementById("bGo").classList.add("s");bootDone=true;setTimeout(()=>bSay("Neural pathways awake. Friday online, Boss."),300);},450);},l.d);});}
-function bSay(t){const u=new SpeechSynthesisUtterance(t);const vs=speechSynthesis.getVoices();const v=vs.find(x=>x.name.includes("Google UK English Female"))||vs.find(x=>x.lang==="en-GB")||vs[0];if(v)u.voice=v;u.pitch=1.04;u.rate=.97;u.volume=.85;speechSynthesis.speak(u);}
-function dismissBoot(){if(!bootDone)return;const b=document.getElementById("boot");b.style.opacity="0";setTimeout(()=>{b.style.display="none";initApp();},1200);}
-document.getElementById("boot").addEventListener("click",dismissBoot);
-document.addEventListener("keydown",e=>{if(e.key!=="Tab")dismissBoot();});
-window.addEventListener("load",()=>{initBg();initOrb();initWave();speechSynthesis.getVoices().length===0?speechSynthesis.onvoiceschanged=runBoot:runBoot();});
 
 // ═══════════════════════════════════
-// APP INIT
+// PANEL DRAG (Tactile Support for Touch/Mouse)
 // ═══════════════════════════════════
-function initApp(){
-  checkM();startClock();initHW();initWx();fetchNews();diagLoop();bindUI();
-  renderHunter();renderTasks();renderMITs();loadCD();initIdle();checkTriggers();
-  setTimeout(()=>{if(API_KEY){speak("All systems online, Boss.");setTimeout(onThisDay,3000);}
-    else addLog("FRIDAY","Neural interface active. Add a Groq key for full cognition, Boss.",true);},400);}
-function checkM(){document.getElementById("api").classList.toggle("show",!API_KEY);}
-function startClock(){const el=document.getElementById("clk");setInterval(()=>el.innerText=new Date().toLocaleTimeString("en-GB",{hour12:false}),1000);}
-function diagLoop(){setInterval(()=>{const c=Math.round(45+Math.random()*45),m=Math.round(38+Math.random()*40);document.getElementById("cpuV").innerText=c+"%";document.getElementById("memV").innerText=m+"%";document.getElementById("cpuF").style.width=c+"%";document.getElementById("memF").style.width=m+"%";},3800);}
+let drag = null, zTop = 300;
+document.querySelectorAll(".pw").forEach(p => {
+  const handle = p.querySelector(".pwh");
+  
+  handle.addEventListener("mousedown", e => {
+    if (e.target.classList.contains("pwx")) return;
+    const r = p.getBoundingClientRect();
+    drag = { p, ox: e.clientX - r.left, oy: e.clientY - r.top };
+  });
+
+  handle.addEventListener("touchstart", e => {
+    if (e.target.classList.contains("pwx")) return;
+    const touch = e.touches[0];
+    const r = p.getBoundingClientRect();
+    drag = { p, ox: touch.clientX - r.left, oy: touch.clientY - r.top };
+  }, { passive: true });
+
+  p.addEventListener("mousedown", () => front(p));
+  p.addEventListener("touchstart", () => front(p), { passive: true });
+});
+
+document.addEventListener("mousemove", e => {
+  if (!drag) return;
+  drag.p.style.left = (e.clientX - drag.ox) + "px";
+  drag.p.style.top = (e.clientY - drag.oy) + "px";
+  drag.p.style.transform = "none";
+  drag.p.style.right = "auto";
+  drag.p.style.bottom = "auto";
+});
+
+document.addEventListener("touchmove", e => {
+  if (!drag) return;
+  const touch = e.touches[0];
+  drag.p.style.left = (touch.clientX - drag.ox) + "px";
+  drag.p.style.top = (touch.clientY - drag.oy) + "px";
+  drag.p.style.transform = "none";
+  drag.p.style.right = "auto";
+  drag.p.style.bottom = "auto";
+}, { passive: false });
+
+document.addEventListener("mouseup", () => drag = null);
+document.addEventListener("touchend", () => drag = null);
+
+function front(p) { p.style.zIndex = ++zTop; }
+function togP(id) { const p = document.getElementById(id); p.classList.contains("show") ? p.classList.remove("show") : (p.classList.add("show"), front(p)); }
+function closeP(id) { document.getElementById(id).classList.remove("show"); }
+function openO(id) { document.getElementById(id).classList.add("show"); }
+function closeO(id) { document.getElementById(id).classList.remove("show"); }
 
 // ═══════════════════════════════════
-// HARDWARE / ENV
+// PARTICLES BACKGROUND
 // ═══════════════════════════════════
-function initHW(){
-  if(navigator.getBattery)navigator.getBattery().then(b=>{const u=()=>document.getElementById("bats").innerText=Math.round(b.level*100)+"%";u();b.addEventListener("levelchange",u);});
-  const un=()=>{const el=document.getElementById("nets");el.innerText=navigator.onLine?"mesh up":"mesh down";el.style.color=navigator.onLine?"rgba(0,255,170,.48)":"rgba(255,80,100,.5)";};
-  addEventListener("online",un);addEventListener("offline",un);un();}
-async function initWx(){
-  if(!navigator.geolocation)return;
-  navigator.geolocation.getCurrentPosition(async pos=>{try{
-    const{latitude:la,longitude:lo}=pos.coords;
-    const wr=await(await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${la}&longitude=${lo}&current_weather=true`)).json();
-    const t=Math.round(wr.current_weather.temperature);wx.temp=t;document.getElementById("ts").innerText=t+"°";document.getElementById("envT").innerText=t+"°C";
-    const ar=await(await fetch(`https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${la}&longitude=${lo}&current=european_aqi`)).json();
-    const aqi=ar.current.european_aqi;wx.aqi=aqi;const cond=aqi<=20?"optimal":aqi<=40?"fair":aqi<=60?"moderate":"hazardous";wx.cond=cond;
-    document.getElementById("envA").innerText=aqi;document.getElementById("envC").innerText=cond;}catch(e){}},()=>{});
-  setTimeout(initWx,1800000);}
-async function fetchNews(){try{const d=await(await fetch("https://www.reddit.com/r/worldnews/top.json?limit=10&t=day")).json();
-  newsHL=d.data.children.map(p=>({title:p.data.title,url:"https://www.reddit.com"+p.data.permalink}));
-  document.getElementById("ticker").innerText=newsHL.map(h=>h.title.toLowerCase()).join("   ·   ");}
-  catch(e){document.getElementById("ticker").innerText="global uplink failure   ·   stark cortex stable   ·   avengers on standby";}}
-function openNews(){if(!newsHL.length){toast("News not loaded yet, Boss.");return;}
-  const html=`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Live News · FRIDAY</title><style>*{box-sizing:border-box;margin:0;padding:0}body{background:#03020a;color:rgba(220,245,240,.85);font-family:Share Tech Mono,monospace;padding:32px;min-height:100vh}h1{font-size:11px;letter-spacing:7px;color:rgba(95,255,212,.58);margin-bottom:24px;text-transform:uppercase}.item{border-left:1px solid rgba(95,255,212,.11);padding:11px 14px;margin-bottom:11px;transition:border-color .2s}.item:hover{border-color:rgba(95,255,212,.32)}.n{font-size:7.5px;letter-spacing:3px;color:rgba(95,255,212,.26);margin-bottom:4px}.item a{color:rgba(220,245,240,.72);text-decoration:none;font-size:12.5px;line-height:1.6}.item a:hover{color:rgba(95,255,212,.82)}</style></head><body><h1>f·r·i·d·a·y · live news</h1>${newsHL.map((h,i)=>`<div class="item"><div class="n">${String(i+1).padStart(2,"0")}</div><a href="${h.url}" target="_blank">${h.title}</a></div>`).join("")}</body></html>`;
-  const w=window.open("","_blank","width=680,height=660");if(w){w.document.write(html);w.document.close();}else toast("Pop-up blocked, Boss.");}
-
-// ═══════════════════════════════════
-// TTS
-// ═══════════════════════════════════
-function speak(text){
-  busy=true;speechSynthesis.cancel();
-  const u=new SpeechSynthesisUtterance(text);
-  const vs=speechSynthesis.getVoices();
-  const v=vs.find(x=>x.name.includes("Google UK English Female"))||vs.find(x=>x.lang==="en-GB")||vs.find(x=>x.lang.startsWith("en-"))||vs[0];
-  if(v)u.voice=v;u.pitch=1.05;u.rate=1.05;u.volume=vol;
-  u.onstart=()=>{orbState="speaking";window._sw&&window._sw(true);};
-  u.onend=()=>{orbState="idle";window._sw&&window._sw(false);busy=false;if(loopOn)schedR();};
-  u.onerror=()=>{orbState="idle";window._sw&&window._sw(false);busy=false;if(loopOn)schedR();};
-  speechSynthesis.speak(u);}
+function initBg() {
+  const c = document.getElementById("bgc"), ctx = c.getContext("2d");
+  const rs = () => { c.width = innerWidth; c.height = innerHeight; }; rs(); addEventListener("resize", rs);
+  const pts = [];
+  for (let i = 0; i < 48; i++) pts.push({ x: Math.random() * innerWidth, y: Math.random() * innerHeight, vx: (Math.random() - .5) * .1, vy: (Math.random() - .5) * .1, r: Math.random() * 1.1 + .3, t: Math.random() > .5, a: Math.random() * .2 + .04, ph: Math.random() * Math.PI * 2 });
+  function draw() {
+    ctx.clearRect(0, 0, c.width, c.height); const t = Date.now() * .001;
+    pts.forEach(p => {
+      p.x += p.vx; p.y += p.vy; if (p.x < 0) p.x = c.width; if (p.x > c.width) p.x = 0; if (p.y < 0) p.y = c.height; if (p.y > c.height) p.y = 0;
+      const a = p.a * (.5 + .5 * Math.sin(t * .55 + p.ph)); ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2); ctx.fillStyle = p.t ? `rgba(95,255,212,${a})` : `rgba(184,138,255,${a})`; ctx.fill();
+    });
+    for (let i = 0; i < pts.length; i++) {
+      for (let j = i + 1; j < pts.length; j++) {
+        const dx = pts[i].x - pts[j].x, dy = pts[i].y - pts[j].y, d = Math.sqrt(dx * dx + dy * dy);
+        if (d < 80) {
+          ctx.beginPath(); ctx.moveTo(pts[i].x, pts[i].y); ctx.lineTo(pts[j].x, pts[j].y); ctx.strokeStyle = `rgba(95,255,212,${(1 - d / 80) * .03})`; ctx.lineWidth = .5; ctx.stroke();
+        }
+      }
+    }
+    requestAnimationFrame(draw);
+  } draw();
+}
 
 // ═══════════════════════════════════
-// STT — fully robust state machine
+// MAIN ORB COGNITION GRAPHICS
 // ═══════════════════════════════════
-const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
-let rec=null,recOn=false;
+function initOrb() {
+  const c = document.getElementById("oc"), ctx = c.getContext("2d"), W = 240, cx = 120, cy = 120; let t = 0;
+  function draw() {
+    ctx.clearRect(0, 0, W, W); t += .014;
+    const C = orbState === "listening" ? { p: "rgba(255,90,130,", s: "rgba(255,60,100,", g: "rgba(255,90,130," } :
+              orbState === "speaking" ? { p: "rgba(95,255,212,", s: "rgba(0,210,180,", g: "rgba(95,255,212," } :
+                                        { p: "rgba(95,255,212,", s: "rgba(184,138,255,", g: "rgba(120,200,255," };
+    for (let i = 3; i >= 1; i--) { const r = 98 + i * 11 + Math.sin(t * .7 + i) * 4, a = (.022 - i * .006) * (orbState !== "idle" ? 1.8 : 1); ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.strokeStyle = C.g + a + ")"; ctx.lineWidth = i * 2.5; ctx.stroke(); }
+    for (let i = 0; i < 4; i++) { const ang = t * (.28 + i * .1) + (i / 4) * Math.PI * 2, r2 = 80 + Math.sin(t + i) * 5; ctx.beginPath(); ctx.arc(cx, cy, r2, ang, ang + Math.PI * .55); const g = ctx.createLinearGradient(cx - r2, cy - r2, cx + r2, cy + r2); g.addColorStop(0, "transparent"); g.addColorStop(.5, C.p + (orbState !== "idle" ? .34 : .17) + ")"); g.addColorStop(1, "transparent"); ctx.strokeStyle = g; ctx.lineWidth = 1; ctx.stroke(); }
+    for (let i = 0; i < 3; i++) { const ang = -t * (.22 + i * .08) + (i / 3) * Math.PI * 2, r2 = 65 + Math.sin(t * 1.1 + i) * 4; ctx.beginPath(); ctx.arc(cx, cy, r2, ang, ang + Math.PI * .4); ctx.strokeStyle = C.s + (orbState !== "idle" ? .25 : .1) + ")"; ctx.lineWidth = .8; ctx.stroke(); }
+    const wA = orbState !== "idle" ? 10 : 3.5;
+    for (let w = 0; w < 4; w++) { const yO = cy - 15 + w * 10; ctx.beginPath(); for (let s = 0; s <= 46; s++) { const px = cx - 46 + (s / 46) * 92, py = yO + wA * Math.sin(t * 2.5 + s * .45 + w * 1.2) * Math.sin(s * .2); s === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py); } ctx.strokeStyle = w % 2 === 0 ? C.p + (.07 + wA * .005) + ")" : C.s + (.05 + wA * .003) + ")"; ctx.lineWidth = .7; ctx.stroke(); }
+    const cR = 40 + Math.sin(t * 1.8) * (orbState === "idle" ? 1.5 : 3.5);
+    const gr = ctx.createRadialGradient(cx - 10, cy - 10, 2, cx, cy, cR);
+    if (orbState === "listening") { gr.addColorStop(0, "rgba(255,220,230,.94)"); gr.addColorStop(.3, "rgba(255,100,130,.86)"); gr.addColorStop(.72, "rgba(190,20,50,.68)"); gr.addColorStop(1, "rgba(100,0,20,0)"); }
+    else if (orbState === "speaking") { gr.addColorStop(0, "rgba(210,255,250,.94)"); gr.addColorStop(.3, "rgba(95,255,212,.86)"); gr.addColorStop(.72, "rgba(0,160,140,.68)"); gr.addColorStop(1, "rgba(0,80,70,0)"); }
+    else { gr.addColorStop(0, "rgba(220,255,252,.9)"); gr.addColorStop(.2, "rgba(95,255,212,.62)"); gr.addColorStop(.55, "rgba(130,80,230,.52)"); gr.addColorStop(.85, "rgba(40,10,110,.28)"); gr.addColorStop(1, "rgba(0,0,40,0)"); }
+    ctx.beginPath(); ctx.arc(cx, cy, cR, 0, Math.PI * 2); ctx.fillStyle = gr; ctx.fill();
+    const sg = ctx.createRadialGradient(cx - 12, cy - 12, 1, cx - 6, cy - 6, cR * .5); sg.addColorStop(0, "rgba(255,255,255,.34)"); sg.addColorStop(1, "rgba(255,255,255,0)"); ctx.beginPath(); ctx.arc(cx, cy, cR, 0, Math.PI * 2); ctx.fillStyle = sg; ctx.fill();
+    const cg = ctx.createRadialGradient(cx, cy, cR - 2, cx, cy, cR + 17); cg.addColorStop(0, C.p + (orbState !== "idle" ? .15 : .06) + ")"); cg.addColorStop(1, "transparent"); ctx.beginPath(); ctx.arc(cx, cy, cR + 17, 0, Math.PI * 2); ctx.fillStyle = cg; ctx.fill();
+    requestAnimationFrame(draw);
+  } draw();
+  document.getElementById("oc").addEventListener("click", doSingleListen);
+}
 
-function buildRec(){
-  if(!SR){toast("Speech recognition not supported in this browser.");return false;}
-  rec=new SR();rec.continuous=false;rec.interimResults=false;rec.lang="en-US";
-  rec.onstart=()=>{
-    recOn=true;orbState="listening";window._sw&&window._sw(true);
-    setSt("listening","warn");
-    document.getElementById("tr").innerText=loopOn?"\"say friday to wake me…\"":"\"listening…\"";};
-  rec.onresult=e=>{
-    const txt=e.results[0][0].transcript.trim();
-    document.getElementById("tr").innerText="\""+txt+"\"";
-    if(loopOn){
-      if(txt.toLowerCase().includes("friday")){
-        const cmd=txt.toLowerCase().split("friday").slice(1).join(" ").trim();
-        addLog("BOSS",txt);cmd?handleInput(cmd):speak("Yes, Boss?");
-      }else schedR();
-    }else{addLog("BOSS",txt);handleInput(txt);}};
-  rec.onerror=e=>{
-    recOn=false;orbState="idle";window._sw&&window._sw(busy);resetLUI();
-    if(e.error==="not-allowed"){toast("Microphone blocked — allow access in browser settings.");stopLoop();}
-    else if(e.error==="aborted"){/* intentional abort, ignore */}
-    else if(loopOn)schedR();};
-  rec.onend=()=>{recOn=false;orbState="idle";window._sw&&window._sw(busy);resetLUI();if(loopOn&&!busy)schedR();};
-  return true;}
+// COGNITIVE BIOMETRIC WAVE
+function initWave() {
+  const c = document.getElementById("wv"), ctx = c.getContext("2d"); c.width = 180; c.height = 22; let t = 0, act = false; window._sw = v => act = v;
+  function draw() {
+    ctx.clearRect(0, 0, 180, 22); t += .04; const amp = act ? 8 : 2;
+    [[`rgba(95,255,212,${act ? .38 : .09})`, 0], [`rgba(184,138,255,${act ? .26 : .06})`, Math.PI]].forEach(([col, ph]) => {
+      ctx.beginPath(); for (let x = 0; x <= 180; x++) { const y = 11 + amp * Math.sin(t * (act ? 1.7 : .55) + x * .04 + ph) * Math.sin(x * .024 + t * .25); x === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y); } ctx.strokeStyle = col; ctx.lineWidth = 1.2; ctx.stroke();
+    }); requestAnimationFrame(draw);
+  } draw();
+}
 
-function setSt(t,d){document.getElementById("stag").innerText=t;document.getElementById("sdot").className="dot "+d;}
-function resetLUI(){setSt("online","on");}
-let rTO=null;
-function schedR(){clearTimeout(rTO);rTO=setTimeout(()=>{if(loopOn&&!busy&&!recOn)safeStart();},450);}
+// COCKPIT STANDBY DIMMER
+let idleActive = false, idleTO = null;
+function initIdleOrb() {
+  const c = document.getElementById("idleOrb"), ctx = c.getContext("2d"), cx = 100, cy = 100; let t = 0;
+  function draw() {
+    if (!idleActive) { requestAnimationFrame(draw); return; } ctx.clearRect(0, 0, 200, 200); t += .007; const b = .5 + .5 * Math.sin(t * .55);
+    for (let i = 3; i >= 1; i--) { const r = 82 + i * 9 + b * 7; ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.strokeStyle = `rgba(95,255,212,${(.015 - i * .004) * (0.4 + b * .6)})`; ctx.lineWidth = i * 3; ctx.stroke(); }
+    for (let i = 0; i < 3; i++) { const ang = t * (.18 + i * .07) + (i / 3) * Math.PI * 2; ctx.beginPath(); ctx.arc(cx, cy, 64 + b * 5, ang, ang + Math.PI * .5); ctx.strokeStyle = `rgba(95,255,212,${.09 + b * .07})`; ctx.lineWidth = .9; ctx.stroke(); }
+    const r = 34 + b * 9; const g = ctx.createRadialGradient(cx - 9, cy - 9, 2, cx, cy, r); g.addColorStop(0, "rgba(210,255,250,.88)"); g.addColorStop(.3, `rgba(95,255,212,${.52 + b * .28})`); g.addColorStop(.7, `rgba(100,60,220,${.38 + b * .16})`); g.addColorStop(1, "rgba(0,0,40,0)"); ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.fillStyle = g; ctx.fill();
+    requestAnimationFrame(draw);
+  } draw();
+}
+function showIdle() { idleActive = true; document.getElementById("idle").classList.add("show"); tickIdleClock(); }
+function hideIdle() { idleActive = false; document.getElementById("idle").classList.remove("show"); resetIdleTO(); }
+function tickIdleClock() { if (!idleActive) return; const n = new Date(); document.getElementById("iClk").innerText = n.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", hour12: false }); document.getElementById("iDay").innerText = n.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" }).toLowerCase(); setTimeout(tickIdleClock, 1000); }
+function resetIdleTO() { clearTimeout(idleTO); idleTO = setTimeout(showIdle, 3 * 60 * 1000); }
+function initIdle() { initIdleOrb(); document.getElementById("idle").addEventListener("click", hideIdle); ["click", "keydown", "mousemove"].forEach(ev => document.addEventListener(ev, () => { if (!idleActive) resetIdleTO(); }, { passive: true })); resetIdleTO(); }
 
-function safeStart(){
-  // If rec doesn't exist or was cleaned up, rebuild
-  if(!rec&&!buildRec())return;
-  if(recOn)return; // already running
-  try{rec.start();}
-  catch(err){
-    recOn=false;
-    if(err.name==="InvalidStateError"){
-      // Recognition object in bad state — destroy and rebuild next cycle
-      try{rec.abort();}catch(e2){}
-      rec=null;
-      setTimeout(()=>{if(loopOn&&!busy){if(buildRec())safeStart();}},500);
-    }else{toast("Mic error: "+err.message);}}}
+// ═══════════════════════════════════
+// COGNITIVE COLD BOOT PROTOCOL
+// ═══════════════════════════════════
+const BOOT = [
+  { t: "allocating neural buffer…", c: "ok", d: 0 }, { t: "mapping cortex topology…", c: "ok", d: 240 },
+  { t: "bioluminescent interface: active", c: "ok", d: 460 }, { t: "voice synthesis: calibrating…", c: "ok", d: 670 },
+  { t: "groq & gemini dual-uplink: establishing…", c: "ok", d: 880 }, { t: "geolocation mesh: online", c: "ok", d: 1060 },
+  { t: "weather cortex: ready", c: "ok", d: 1230 }, { t: "hunter system: calibrated", c: "ok", d: 1390 },
+  { t: "speech engine: standby", c: "w", d: 1540 }, { t: "particle renderer: loaded", c: "ok", d: 1680 },
+  { t: "f.r.i.d.a.y. — awake", c: "ok", d: 1900 },
+];
+let bootDone = false;
+function runBoot() {
+  const log = document.getElementById("bLog"), fill = document.getElementById("bFill"), n = BOOT.length;
+  BOOT.forEach((l, i) => {
+    setTimeout(() => {
+      const el = document.createElement("div"); el.className = "bl " + l.c; el.innerText = l.t; log.appendChild(el); setTimeout(() => el.classList.add("s"), 20); fill.style.width = Math.round(((i + 1) / n) * 100) + "%";
+      if (i === n - 1) setTimeout(() => { document.getElementById("bGo").classList.add("s"); bootDone = true; setTimeout(() => bSay("Neural pathways awake. Friday online, Boss."), 300); }, 450);
+    }, l.d);
+  });
+}
+function bSay(t) {
+  const u = new SpeechSynthesisUtterance(t); const vs = speechSynthesis.getVoices(); const v = vs.find(x => x.name.includes("Google UK English Female")) || vs.find(x => x.lang === "en-GB") || vs[0]; if (v) u.voice = v; u.pitch = 1.04; u.rate = .97; u.volume = .85;
+  speechSynthesis.speak(u);
+}
+function dismissBoot() { if (!bootDone) return; const b = document.getElementById("boot"); b.style.opacity = "0"; setTimeout(() => { b.style.display = "none"; initApp(); }, 1200); }
+document.getElementById("boot").addEventListener("click", dismissBoot);
+document.addEventListener("keydown", e => { if (e.key !== "Tab") dismissBoot(); });
+window.addEventListener("load", () => { initBg(); initOrb(); initWave(); speechSynthesis.getVoices().length === 0 ? speechSynthesis.onvoiceschanged = runBoot : runBoot(); });
 
-function safeStop(){
+// ═══════════════════════════════════
+// NEURAL SYSTEM UPLINK
+// ═══════════════════════════════════
+function initApp() {
+  checkM(); startClock(); initHW(); initWx(); fetchNews(); diagLoop(); bindUI();
+  renderHunter(); renderTasks(); renderMITs(); loadCD(); initIdle(); checkTriggers();
+  setTimeout(() => {
+    const hasGemini = (typeof apiKey !== 'undefined' && apiKey !== "");
+    if (API_KEY) {
+      addLog("FRIDAY", "Neural Link: Groq Llama-3.3 Core authenticated. Fully online, Boss.", true);
+      speak("All systems online. Groq Llama-3.3 Core authenticated, Boss.");
+      setTimeout(onThisDay, 3000);
+    } else if (hasGemini) {
+      addLog("FRIDAY", "Neural Link: Gemini Core authenticated. Fully online, Boss.", true);
+      speak("All systems online. Gemini Core authenticated, Boss.");
+      setTimeout(onThisDay, 3000);
+    } else {
+      addLog("FRIDAY", "Neural interface active. Connect a key in Cockpit Settings for full AI cognition, Boss.", true);
+    }
+  }, 400);
+}
+
+function checkM() {
+  const hasGemini = (typeof apiKey !== 'undefined' && apiKey !== "");
+  document.getElementById("api").classList.toggle("show", !API_KEY && !hasGemini);
+}
+
+function startClock() { const el = document.getElementById("clk"); setInterval(() => el.innerText = new Date().toLocaleTimeString("en-GB", { hour12: false }), 1000); }
+function diagLoop() { setInterval(() => { const c = Math.round(45 + Math.random() * 45), m = Math.round(38 + Math.random() * 40); document.getElementById("cpuV").innerText = c + "%"; document.getElementById("memV").innerText = m + "%"; document.getElementById("cpuF").style.width = c + "%"; document.getElementById("memF").style.width = m + "%"; }, 3800); }
+
+// ═══════════════════════════════════
+// HARDWARE / CLIMATE AGENT
+// ═══════════════════════════════════
+function initHW() {
+  if (navigator.getBattery) navigator.getBattery().then(b => { const u = () => document.getElementById("bats").innerText = Math.round(b.level * 100) + "%"; u(); b.addEventListener("levelchange", u); });
+  const un = () => { const el = document.getElementById("nets"); el.innerText = navigator.onLine ? "mesh up" : "mesh down"; el.style.color = navigator.onLine ? "rgba(0,255,170,.48)" : "rgba(255,80,100,.5)"; };
+  addEventListener("online", un); addEventListener("offline", un); un();
+}
+async function initWx() {
+  if (!navigator.geolocation) return;
+  navigator.geolocation.getCurrentPosition(async pos => {
+    try {
+      const { latitude: la, longitude: lo } = pos.coords;
+      const wr = await (await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${la}&longitude=${lo}&current_weather=true`)).json();
+      const t = Math.round(wr.current_weather.temperature); wx.temp = t; document.getElementById("ts").innerText = t + "°"; document.getElementById("envT").innerText = t + "°C";
+      const ar = await (await fetch(`https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${la}&longitude=${lo}&current=european_aqi`)).json();
+      const aqi = ar.current.european_aqi; wx.aqi = aqi; const cond = aqi <= 20 ? "optimal" : aqi <= 40 ? "fair" : "moderate" ? "hazardous" : "hazardous"; wx.cond = cond;
+      document.getElementById("envA").innerText = aqi; document.getElementById("envC").innerText = cond;
+    } catch (e) { }
+  }, () => { });
+  setTimeout(initWx, 1800000);
+}
+async function fetchNews() {
+  try {
+    const d = await (await fetch("https://www.reddit.com/r/worldnews/top.json?limit=10&t=day")).json();
+    newsHL = d.data.children.map(p => ({ title: p.data.title, url: "https://www.reddit.com" + p.data.permalink }));
+    document.getElementById("ticker").innerText = newsHL.map(h => h.title.toLowerCase()).join("   ·   ");
+  }
+  catch (e) { document.getElementById("ticker").innerText = "global uplink failure   ·   stark cortex stable   ·   avengers on standby"; }
+}
+function openNews() {
+  if (!newsHL.length) { toast("News not loaded yet, Boss."); return; }
+  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Live News · FRIDAY</title><style>*{box-sizing:border-box;margin:0;padding:0}body{background:#03020a;color:rgba(220,245,240,.85);font-family:Share Tech Mono,monospace;padding:32px;min-height:100vh}h1{font-size:11px;letter-spacing:7px;color:rgba(95,255,212,.58);margin-bottom:24px;text-transform:uppercase}.item{border-left:1px solid rgba(95,255,212,.11);padding:11px 14px;margin-bottom:11px;transition:border-color .2s}.item:hover{border-color:rgba(95,255,212,.32)}.n{font-size:7.5px;letter-spacing:3px;color:rgba(95,255,212,.26);margin-bottom:4px}.item a{color:rgba(220,245,240,.72);text-decoration:none;font-size:12.5px;line-height:1.6}.item a:hover{color:rgba(95,255,212,.82)}</style></head><body><h1>f·r·i·d·a·y · live news</h1>${newsHL.map((h, i) => `<div class="item"><div class="n">${String(i + 1).padStart(2, "0")}</div><a href="${h.url}" target="_blank">${h.title}</a></div>`).join("")}</body></html>`;
+  const w = window.open("", "_blank", "width=680,height=660"); if (w) { w.document.write(html); w.document.close(); } else toast("Pop-up blocked, Boss.");
+}
+
+// ═══════════════════════════════════
+// SPEECH SYNTHESIS ENGINE
+// ═══════════════════════════════════
+let currentUtterance = null;
+
+function speak(text) {
+  busy = true;
+  safeStop(); // Ensure speech recognition stops immediately when speaking initiates
+
+  if (currentUtterance) {
+    currentUtterance.onstart = null;
+    currentUtterance.onend = null;
+    currentUtterance.onerror = null;
+  }
+  speechSynthesis.cancel();
+
+  const u = new SpeechSynthesisUtterance(text);
+  currentUtterance = u;
+
+  const vs = speechSynthesis.getVoices();
+  const v = vs.find(x => x.name.includes("Google UK English Female")) || vs.find(x => x.lang === "en-GB") || vs.find(x => x.lang.startsWith("en-")) || vs[0];
+  if (v) u.voice = v; u.pitch = 1.05; u.rate = 1.05; u.volume = vol;
+
+  u.onstart = () => {
+    orbState = "speaking";
+    window._sw && window._sw(true);
+  };
+
+  const finishSpeech = () => {
+    if (currentUtterance === u) {
+      orbState = "idle";
+      window._sw && window._sw(false);
+      currentUtterance = null;
+      if (!transactionActive) {
+        busy = false;
+        if (loopOn) {
+          schedR();
+        }
+      }
+    }
+  };
+
+  u.onend = finishSpeech;
+  u.onerror = finishSpeech;
+  speechSynthesis.speak(u);
+}
+
+// ═══════════════════════════════════
+// SPEECH RECOGNITION (Fully Robust State Machine)
+// ═══════════════════════════════════
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+let rec = null, recOn = false;
+
+function buildRec() {
+  if (!SR) { toast("Speech recognition not supported in this browser."); return false; }
+  rec = new SR(); rec.continuous = false; rec.interimResults = false; rec.lang = "en-US";
+  
+  rec.onstart = () => {
+    recOn = true; orbState = "listening"; window._sw && window._sw(true);
+    setSt("listening", "warn");
+    document.getElementById("tr").innerText = loopOn ? "\"say friday to wake me…\"" : "\"listening…\"";
+  };
+  
+  rec.onresult = e => {
+    const txt = e.results[0][0].transcript.trim();
+    document.getElementById("tr").innerText = "\"" + txt + "\"";
+    const phrase = txt.toLowerCase();
+    
+    if (loopOn) {
+      if (phrase.includes("friday")) {
+        // Natural trigger: Strip out "friday" keyword beautifully and process remaining command
+        let cmd = phrase.replace(/\bfriday\b/g, "").replace(/^\s*,\s*|\s*,\s*$/g, "").trim();
+        addLog("BOSS", txt);
+        cmd ? handleInput(cmd) : speak("Yes, Boss?");
+      } else {
+        schedR();
+      }
+    } else {
+      addLog("BOSS", txt);
+      handleInput(txt);
+    }
+  };
+  
+  rec.onerror = e => {
+    recOn = false; orbState = "idle"; window._sw && window._sw(busy); resetLUI();
+    if (e.error === "not-allowed") { toast("Microphone blocked — allow access in browser settings."); stopLoop(); }
+    else if (e.error === "aborted") { /* Safe Intentional Abort */ }
+    else if (loopOn) schedR();
+  };
+  
+  rec.onend = () => {
+    recOn = false; orbState = "idle"; window._sw && window._sw(busy); resetLUI();
+    if (loopOn && !busy && !transactionActive) schedR();
+  };
+  return true;
+}
+
+function setSt(t, d) { document.getElementById("stag").innerText = t; document.getElementById("sdot").className = "dot " + d; }
+function resetLUI() { setSt("online", "on"); }
+
+let rTO = null;
+function schedR() {
   clearTimeout(rTO);
-  if(rec&&recOn){try{rec.abort();}catch(e){}}
-  recOn=false;}
+  rTO = setTimeout(() => {
+    if (loopOn && !busy && !recOn && !transactionActive) {
+      safeStart();
+    }
+  }, 450);
+}
 
-// Single-shot listen — saves and restores loop state cleanly
-function doSingleListen(){
-  if(!rec&&!buildRec())return;
-  const wasLoop=loopOn;
-  // Temporarily stop loop to avoid restart interference
-  if(loopOn){loopOn=false;safeStop();}
-  // Give abort time to settle
-  setTimeout(()=>{
-    // Override handlers for single-shot
-    const origEnd=rec?rec.onend:null,origErr=rec?rec.onerror:null;
-    const btn=document.getElementById("dListen");
-    const restore=()=>{
-      btn.classList.remove("hot");btn.querySelector(".dk-l").innerText="listen";
-      if(rec){rec.onend=origEnd;rec.onerror=origErr;}
-      loopOn=wasLoop;if(loopOn)schedR();};
-    if(!rec&&!buildRec()){loopOn=wasLoop;return;}
-    rec.onend=()=>{recOn=false;orbState="idle";window._sw&&window._sw(busy);resetLUI();restore();};
-    rec.onerror=e=>{recOn=false;orbState="idle";window._sw&&window._sw(busy);resetLUI();
-      if(e.error==="not-allowed"){toast("Microphone blocked — allow access in browser settings.");loopOn=false;}
-      restore();};
-    btn.classList.add("hot");btn.querySelector(".dk-l").innerText="listening…";
-    safeStart();},loopOn?350:50);}
+function safeStart() {
+  if (!rec && !buildRec()) return;
+  if (recOn) return;
+  try {
+    recOn = true; // Block race conditions instantly
+    rec.start();
+  }
+  catch (err) {
+    recOn = false;
+    if (err.name === "InvalidStateError" || err.message?.includes("already started")) {
+      try { rec.abort(); } catch (e2) { }
+      rec = null;
+      setTimeout(() => { if (loopOn && !busy && !transactionActive) { if (buildRec()) safeStart(); } }, 500);
+    } else {
+      toast("Mic error: " + err.message);
+    }
+  }
+}
 
-function doListen(){doSingleListen();}
+function safeStop() {
+  clearTimeout(rTO);
+  if (rec && recOn) { try { rec.abort(); } catch (e) { } }
+  recOn = false;
+}
 
-function toggleLoop(){loopOn?stopLoop():startLoop();}
-function startLoop(){
-  if(!rec&&!buildRec())return;
-  loopOn=true;
-  document.getElementById("wks").innerText="loop active";document.getElementById("wks").style.color="rgba(0,255,170,.5)";
-  document.getElementById("dLoop").classList.add("act");document.getElementById("dLoop").querySelector(".dk-l").innerText="loop on";
-  safeStart();}
-function stopLoop(){
-  loopOn=false;
-  document.getElementById("wks").innerText="loop idle";document.getElementById("wks").style.color="rgba(255,80,100,.52)";
-  document.getElementById("dLoop").classList.remove("act");document.getElementById("dLoop").querySelector(".dk-l").innerText="loop";
-  safeStop();}
+function doSingleListen() {
+  if (!rec && !buildRec()) return;
+  const wasLoop = loopOn;
+  if (loopOn) { loopOn = false; safeStop(); }
+  setTimeout(() => {
+    const origEnd = rec ? rec.onend : null, origErr = rec ? rec.onerror : null;
+    const btn = document.getElementById("dListen");
+    const restore = () => {
+      btn.classList.remove("hot"); btn.querySelector(".dk-l").innerText = "listen";
+      if (rec) { rec.onend = origEnd; rec.onerror = origErr; }
+      loopOn = wasLoop; if (loopOn && !busy) schedR();
+    };
+    if (!rec && !buildRec()) { loopOn = wasLoop; return; }
+    rec.onend = () => { recOn = false; orbState = "idle"; window._sw && window._sw(busy); resetLUI(); restore(); };
+    rec.onerror = e => {
+      recOn = false; orbState = "idle"; window._sw && window._sw(busy); resetLUI();
+      if (e.error === "not-allowed") { toast("Microphone blocked — allow access in browser settings."); loopOn = false; }
+      restore();
+    };
+    btn.classList.add("hot"); btn.querySelector(".dk-l").innerText = "listening…";
+    safeStart();
+  }, loopOn ? 350 : 50);
+}
+
+function doListen() { doSingleListen(); }
+
+function toggleLoop() { loopOn ? stopLoop() : startLoop(); }
+function startLoop() {
+  if (!rec && !buildRec()) return;
+  loopOn = true;
+  document.getElementById("wks").innerText = "loop active"; document.getElementById("wks").style.color = "rgba(0,255,170,.5)";
+  document.getElementById("dLoop").classList.add("act"); document.getElementById("dLoop").querySelector(".dk-l").innerText = "loop on";
+  safeStart();
+}
+function stopLoop() {
+  loopOn = false;
+  document.getElementById("wks").innerText = "loop idle"; document.getElementById("wks").style.color = "rgba(255,80,100,.52)";
+  document.getElementById("dLoop").classList.remove("act"); document.getElementById("dLoop").querySelector(".dk-l").innerText = "loop";
+  safeStop();
+}
 
 // ═══════════════════════════════════
-// LOG
+// LOG TERMINAL
 // ═══════════════════════════════════
-function addLog(who,html,fri=false){
-  const row=document.createElement("div");row.className="le"+(fri?" fri":"");
-  row.innerHTML=`<div class="ls">${who}</div><div class="lt">${html}</div>`;
+function addLog(who, html, fri = false) {
+  const row = document.createElement("div"); row.className = "le" + (fri ? " fri" : "");
+  row.innerHTML = `<div class="ls">${who}</div><div class="lt">${html}</div>`;
   document.getElementById("msgBuf").appendChild(row);
-  const w=document.getElementById("chatWin");w.scrollTop=w.scrollHeight;
-  const p=document.getElementById("pComms");if(!p.classList.contains("show")){p.classList.add("show");front(p);}}
+  const w = document.getElementById("chatWin"); w.scrollTop = w.scrollHeight;
+  const p = document.getElementById("pComms"); if (!p.classList.contains("show")) { p.classList.add("show"); front(p); }
+}
 
 // ═══════════════════════════════════
-// TASKS
+// TASK INVENTORY
 // ═══════════════════════════════════
-function renderTasks(){const el=document.getElementById("remList");if(!reminders.length){el.innerHTML="<span style=\"font-size:9px;color:rgba(220,245,240,.18)\">no tasks.</span>";return;}el.innerHTML=reminders.map((r,i)=>`<span class="tc" onclick="delRem(${i})">${r} ×</span>`).join("");}
-window.delRem=i=>{reminders.splice(i,1);localStorage.setItem("fri_rem",JSON.stringify(reminders));renderTasks();};
+function renderTasks() { const el = document.getElementById("remList"); if (!reminders.length) { el.innerHTML = "<span style=\"font-size:9px;color:rgba(220,245,240,.18)\">no tasks.</span>"; return; } el.innerHTML = reminders.map((r, i) => `<span class="tc" onclick="delRem(${i})">${r} ×</span>`).join(""); }
+window.delRem = i => { reminders.splice(i, 1); localStorage.setItem("fri_rem", JSON.stringify(reminders)); renderTasks(); };
 
 // ═══════════════════════════════════
-// HUNTER SYSTEM
+// COGNITIVE RPG HUNTER CORE
 // ═══════════════════════════════════
-const RANKS=["E","D","C","B","A","S"],RANK_XP=[0,500,1500,3500,7000,12000],RCSS=["rE","rD","rC","rB","rA","rS"];
-function getHD(){return JSON.parse(localStorage.getItem("fri_hunter")||JSON.stringify({xp:0,level:1,totalXp:0,streak:0,lastCheckin:"",habits:[{name:"Exercise",xp:30},{name:"Read",xp:20},{name:"Meditate",xp:20},{name:"Cold shower",xp:15},{name:"No junk food",xp:15}],history:{}}));}
-function saveHD(d){localStorage.setItem("fri_hunter",JSON.stringify(d));}
-function getRank(tx){let r=0;for(let i=RANK_XP.length-1;i>=0;i--){if(tx>=RANK_XP[i]){r=i;break;}}return r;}
-function d2s(d){return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");}
-function today(){return d2s(new Date());}
+const RANKS = ["E", "D", "C", "B", "A", "S"], RANK_XP = [0, 500, 1500, 3500, 7000, 12000], RCSS = ["rE", "rD", "rC", "rB", "rA", "rS"];
+function getHD() { return JSON.parse(localStorage.getItem("fri_hunter") || JSON.stringify({ xp: 0, level: 1, totalXp: 0, streak: 0, lastCheckin: "", habits: [{ name: "Exercise", xp: 30 }, { name: "Read", xp: 20 }, { name: "Meditate", xp: 20 }, { name: "Cold shower", xp: 15 }, { name: "No junk food", xp: 15 }], history: {} })); }
+function saveHD(d) { localStorage.setItem("fri_hunter", JSON.stringify(d)); }
+function getRank(tx) { let r = 0; for (let i = RANK_XP.length - 1; i >= 0; i--) { if (tx >= RANK_XP[i]) { r = i; break; } } return r; }
+function d2s(d) { return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"); }
+function today() { return d2s(new Date()); }
 
-function renderHunter(){const d=getHD(),ri=getRank(d.totalXp);
-  const rb=document.getElementById("rankBadge");rb.className="rb "+RCSS[ri];rb.innerText=RANKS[ri]+"-RANK";
-  document.getElementById("hunterLvl").innerText=d.level;
-  const xl=d.xp%(100*d.level);document.getElementById("xpDisp").innerText=xl+"/"+(100*d.level);document.getElementById("xpFill").style.width=(xl/(100*d.level)*100)+"%";
-  document.getElementById("statStreak").innerText=d.streak;document.getElementById("statTotal").innerText=d.totalXp;
-  renderHabitG(d);}
+function renderHunter() {
+  const d = getHD(), ri = getRank(d.totalXp);
+  const rb = document.getElementById("rankBadge"); rb.className = "rb " + RCSS[ri]; rb.innerText = RANKS[ri] + "-RANK";
+  document.getElementById("hunterLvl").innerText = d.level;
+  const xl = d.xp % (100 * d.level); document.getElementById("xpDisp").innerText = xl + "/" + (100 * d.level); document.getElementById("xpFill").style.width = (xl / (100 * d.level) * 100) + "%";
+  document.getElementById("statStreak").innerText = d.streak; document.getElementById("statTotal").innerText = d.totalXp;
+  renderHabitG(d);
+}
 
-function renderHabitG(d){const con=document.getElementById("habitGrids");con.innerHTML="";
-  d.habits.forEach((h,hi)=>{let streak=0;const cd=new Date();for(let i=0;i<365;i++){const ds=d2s(cd);if(d.history[ds]&&d.history[ds].includes(hi))streak++;else break;cd.setDate(cd.getDate()-1);}
-    const wrap=document.createElement("div");wrap.className="hbl";
-    const nr=document.createElement("div");nr.className="hnr";nr.innerHTML=`<span class="hna">${h.name}</span><span class="hst">🔥 ${streak}</span>`;wrap.appendChild(nr);
-    const cells=document.createElement("div");cells.className="hcs";
-    for(let i=27;i>=0;i--){const dd=new Date();dd.setDate(dd.getDate()-i);const ds=d2s(dd);const done=d.history[ds]&&d.history[ds].includes(hi);const cell=document.createElement("div");cell.className="hc "+(done?"d"+Math.min(5,1+Math.floor((27-i)/7)):"e");cell.title=ds+(done?" ✓":"");cells.appendChild(cell);}
-    wrap.appendChild(cells);con.appendChild(wrap);});}
+function renderHabitG(d) {
+  const con = document.getElementById("habitGrids"); con.innerHTML = "";
+  d.habits.forEach((h, hi) => {
+    let streak = 0; const cd = new Date(); for (let i = 0; i < 365; i++) { const ds = d2s(cd); if (d.history[ds] && d.history[ds].includes(hi)) streak++; else break; cd.setDate(cd.getDate() - 1); }
+    const wrap = document.createElement("div"); wrap.className = "hbl";
+    const nr = document.createElement("div"); nr.className = "hnr"; nr.innerHTML = `<span class="hna">${h.name}</span><span class="hst">🔥 ${streak}</span>`; wrap.appendChild(nr);
+    const cells = document.createElement("div"); cells.className = "hcs";
+    for (let i = 27; i >= 0; i--) { const dd = new Date(); dd.setDate(dd.getDate() - i); const ds = d2s(dd); const done = d.history[ds] && d.history[ds].includes(hi); const cell = document.createElement("div"); cell.className = "hc " + (done ? "d" + Math.min(5, 1 + Math.floor((27 - i) / 7)) : "e"); cell.title = ds + (done ? " ✓" : ""); cells.appendChild(cell); }
+    wrap.appendChild(cells); con.appendChild(wrap);
+  });
+}
 
-function prepCI(){const d=getHD();const td=today();const already=d.lastCheckin===td;
-  document.getElementById("ciDate").innerText=new Date().toDateString().toLowerCase()+(already?" · already logged — re-submit to update":"");
-  const items=document.getElementById("ciItems");items.innerHTML="";
-  d.habits.forEach((h,i)=>{const el=document.createElement("div");el.className="cii";el.dataset.idx=i;
-    if(already&&d.history[td]&&d.history[td].includes(i))el.classList.add("ck");
-    el.innerHTML=`<div class="cic"></div><span class="cin">${h.name}</span><span class="cix">+${h.xp} xp</span>`;
-    el.addEventListener("click",()=>el.classList.toggle("ck"));items.appendChild(el);});
-  speak(already?"Already logged today, Boss. You can update if needed.":"Which habits did you complete today, Boss?");}
+function prepCI() {
+  const d = getHD(); const td = today(); const already = d.lastCheckin === td;
+  document.getElementById("ciDate").innerText = new Date().toDateString().toLowerCase() + (already ? " · already logged — re-submit to update" : "");
+  const items = document.getElementById("ciItems"); items.innerHTML = "";
+  d.habits.forEach((h, i) => {
+    const el = document.createElement("div"); el.className = "cii"; el.dataset.idx = i;
+    if (already && d.history[td] && d.history[td].includes(i)) el.classList.add("ck");
+    el.innerHTML = `<div class="cic"></div><span class="cin">${h.name}</span><span class="cix">+${h.xp} xp</span>`;
+    el.addEventListener("click", () => el.classList.toggle("ck")); items.appendChild(el);
+  });
+  speak(already ? "Already logged today, Boss. You can update if needed." : "Which habits did you complete today, Boss?");
+}
 
-function confirmCI(){const d=getHD(),td=today();
-  const checked=[...document.querySelectorAll(".cii.ck")].map(el=>parseInt(el.dataset.idx));
-  const already=d.lastCheckin===td;
-  if(already&&d.history[td]){let prev=0;d.history[td].forEach(i=>{prev+=d.habits[i].xp;});d.totalXp=Math.max(0,d.totalXp-prev);d.xp=Math.max(0,d.xp-prev);}
-  if(!d.history[td])d.history[td]=[];d.history[td]=checked;
-  let gained=0;checked.forEach(i=>{gained+=d.habits[i].xp;});d.totalXp+=gained;d.xp+=gained;
-  const oldRi=getRank(d.totalXp-gained);let leveled=false;while(d.xp>=100*d.level){d.xp-=100*d.level;d.level++;leveled=true;}
-  if(!already){const y=new Date();y.setDate(y.getDate()-1);if(d.lastCheckin===d2s(y)||!d.lastCheckin)d.streak++;else if(d.lastCheckin!==td)d.streak=checked.length>0?1:0;}
-  d.lastCheckin=td;saveHD(d);closeO("foCI");renderHunter();
-  const newRi=getRank(d.totalXp);
-  if(leveled){showLU(d.level,newRi!==oldRi?RANKS[newRi]:null);speak(`Level up, Boss. Level ${d.level}. ${newRi!==oldRi?"Rank "+RANKS[newRi]+".":""} ${gained} xp.`);}
-  else if(gained>0)speak(`${gained} xp absorbed. ${checked.length} of ${d.habits.length} habits, Boss.`);
-  else speak("No habits logged. The cycle continues, Boss.");}
+function confirmCI() {
+  const d = getHD(), td = today();
+  const checked = [...document.querySelectorAll(".cii.ck")].map(el => parseInt(el.dataset.idx));
+  const already = d.lastCheckin === td;
+  if (already && d.history[td]) { let prev = 0; d.history[td].forEach(i => { prev += d.habits[i] ? d.habits[i].xp : 0; }); d.totalXp = Math.max(0, d.totalXp - prev); d.xp = Math.max(0, d.xp - prev); }
+  if (!d.history[td]) d.history[td] = []; d.history[td] = checked;
+  let gained = 0; checked.forEach(i => { gained += d.habits[i] ? d.habits[i].xp : 0; }); d.totalXp += gained; d.xp += gained;
+  const oldRi = getRank(d.totalXp - gained); let leveled = false; while (d.xp >= 100 * d.level) { d.xp -= 100 * d.level; d.level++; leveled = true; }
+  if (!already) { const y = new Date(); y.setDate(y.getDate() - 1); if (d.lastCheckin === d2s(y) || !d.lastCheckin) d.streak++; else if (d.lastCheckin !== td) d.streak = checked.length > 0 ? 1 : 0; }
+  d.lastCheckin = td; saveHD(d); closeO("foCI"); renderHunter();
+  const newRi = getRank(d.totalXp);
+  if (leveled) { showLU(d.level, newRi !== oldRi ? RANKS[newRi] : null); speak(`Level up, Boss. Level ${d.level}. ${newRi !== oldRi ? "Rank " + RANKS[newRi] + "." : ""} ${gained} xp.`); }
+  else if (gained > 0) speak(`${gained} xp absorbed. ${checked.length} of ${d.habits.length} habits, Boss.`);
+  else speak("No habits logged. The cycle continues, Boss.");
+}
 
-function showLU(lvl,rank){const f=document.getElementById("luf");document.getElementById("luSub").innerText=rank?"rank → "+rank:"level "+lvl;f.classList.add("show");setTimeout(()=>f.classList.remove("show"),3200);}
-
-// ═══════════════════════════════════
-// MIT
-// ═══════════════════════════════════
-function getMITs(){return JSON.parse(localStorage.getItem("fri_mit")||'{"date":"","tasks":[],"done":[]}');}
-function saveMITs(d){localStorage.setItem("fri_mit",JSON.stringify(d));}
-function renderMITs(){const d=getMITs(),td=today();document.getElementById("mitDateLbl").innerText=td;const strip=document.getElementById("ms"),list=document.getElementById("mitList");
-  if(!d.tasks.length||d.date!==td){strip.innerHTML="";list.innerHTML="<div style=\"font-size:9.5px;color:rgba(220,245,240,.28)\">say \"mit\" to set today's top 3</div>";return;}
-  const rows=d.tasks.map((t,i)=>`<div class="msi"><div class="msin">0${i+1}</div><div class="msit ${d.done[i]?"done":""}">${t}</div><div class="msic ${d.done[i]?"d":""}" onclick="togMIT(${i})"></div></div>`).join("");
-  strip.innerHTML=rows;list.innerHTML=rows;}
-window.togMIT=i=>{const d=getMITs();d.done[i]=!d.done[i];saveMITs(d);renderMITs();if(d.done.every(Boolean))speak("All three MITs complete, Boss. Outstanding.");};
-function openMIT(){const d=getMITs(),td=today();if(d.date===td&&d.tasks.length){["mit1","mit2","mit3"].forEach((id,i)=>document.getElementById(id).value=d.tasks[i]||"");}else["mit1","mit2","mit3"].forEach(id=>document.getElementById(id).value="");openO("foMIT");setTimeout(()=>document.getElementById("mit1").focus(),100);}
-function saveMIT(){const t1=document.getElementById("mit1").value.trim(),t2=document.getElementById("mit2").value.trim(),t3=document.getElementById("mit3").value.trim();const tasks=[t1,t2,t3].filter(Boolean);if(!tasks.length){toast("Enter at least one MIT, Boss.");return;}saveMITs({date:today(),tasks,done:tasks.map(()=>false)});closeO("foMIT");renderMITs();speak(`${tasks.length} MITs locked in, Boss. ${tasks[0]} leads the charge.`);}
-
-// ═══════════════════════════════════
-// COUNTDOWN
-// ═══════════════════════════════════
-function loadCD(){const s=JSON.parse(localStorage.getItem("fri_cd")||"null");if(s)startCD(s.name,s.ts);}
-function startCD(name,ts){localStorage.setItem("fri_cd",JSON.stringify({name,ts}));document.getElementById("cdNone").style.display="none";document.getElementById("cdShow").style.display="block";document.getElementById("cdLbl").innerText=name.toUpperCase();if(cdInt)clearInterval(cdInt);
-  function tick(){const diff=ts-Date.now();if(diff<=0){["cdD","cdH","cdM","cdS"].forEach(id=>document.getElementById(id).innerText="00");clearInterval(cdInt);return;}
-    const days=Math.floor(diff/86400000),hrs=Math.floor((diff%86400000)/3600000),mins=Math.floor((diff%3600000)/60000),secs=Math.floor((diff%60000)/1000);
-    document.getElementById("cdD").innerText=String(days).padStart(2,"0");document.getElementById("cdH").innerText=String(hrs).padStart(2,"0");document.getElementById("cdM").innerText=String(mins).padStart(2,"0");document.getElementById("cdS").innerText=String(secs).padStart(2,"0");
-    days===0?document.getElementById("cdDigs").classList.add("cdug"):document.getElementById("cdDigs").classList.remove("cdug");}
-  tick();cdInt=setInterval(tick,1000);}
+function showLU(lvl, rank) { const f = document.getElementById("luf"); document.getElementById("luSub").innerText = rank ? "rank → " + rank : "level " + lvl; f.classList.add("show"); setTimeout(() => f.classList.remove("show"), 3200); }
 
 // ═══════════════════════════════════
-// SHUTDOWN
+// MIT TARGET SEGMENT
 // ═══════════════════════════════════
-let sdStep=0;
-function mkDots(id,n,cur){const el=document.getElementById(id);if(!el)return;el.innerHTML="";for(let i=0;i<n;i++){const d=document.createElement("div");d.className="fd "+(i<cur?"done":i===cur?"cur":"");el.appendChild(d);}}
-function openSD(){sdStep=0;mkDots("sdDots",3,0);["sdS0","sdS1","sdS2","sdS3"].forEach((id,i)=>document.getElementById(id).className="fst"+(i===0?" active":""));["sdA0","sdA1","sdA2"].forEach(id=>document.getElementById(id).value="");document.getElementById("sdNext").innerText="next →";document.getElementById("sdNext").onclick=sdAdv;openO("foSD");speak("End of day. What did you finish today, Boss?");setTimeout(()=>document.getElementById("sdA0").focus(),200);}
-function sdAdv(){if(sdStep<2){sdStep++;["sdS0","sdS1","sdS2","sdS3"].forEach((id,i)=>document.getElementById(id).className="fst"+(i===sdStep?" active":""));mkDots("sdDots",3,sdStep);speak(["What's still pending?","What drained you today?"][sdStep-1]);if(sdStep===2)document.getElementById("sdNext").innerText="complete shutdown";setTimeout(()=>document.getElementById("sdS"+sdStep).querySelector(".fi")?.focus(),100);}
-  else{const fin=document.getElementById("sdA0").value.trim(),pend=document.getElementById("sdA1").value.trim(),drain=document.getElementById("sdA2").value.trim();const log=JSON.parse(localStorage.getItem("fri_sdlog")||"[]");log.push({date:today(),finished:fin,pending:pend,drained:drain});if(log.length>30)log.shift();localStorage.setItem("fri_sdlog",JSON.stringify(log));
-    if(pend)pend.split(/[,\n]+/).map(t=>t.trim()).filter(Boolean).forEach(t=>{if(!reminders.includes(t)){reminders.push(t);localStorage.setItem("fri_rem",JSON.stringify(reminders));}});renderTasks();
-    document.getElementById("sdSum").innerHTML=`<b style="color:rgba(95,255,212,.5)">finished:</b> ${fin||"—"}<br><br><b style="color:rgba(184,138,255,.5)">pending:</b> ${pend||"—"}<br><br><b style="color:rgba(255,120,140,.5)">drained by:</b> ${drain||"—"}`;
-    ["sdS0","sdS1","sdS2"].forEach(id=>document.getElementById(id).className="fst");document.getElementById("sdS3").className="fst active";
-    document.getElementById("sdNext").innerText="close";document.getElementById("sdNext").onclick=()=>{closeO("foSD");document.getElementById("sdNext").onclick=sdAdv;};
-    speak("Shutdown complete. Pending items saved to your registry. Rest well, Boss.");}}
+function getMITs() { return JSON.parse(localStorage.getItem("fri_mit") || '{"date":"","tasks":[],"done":[]}'); }
+function saveMITs(d) { localStorage.setItem("fri_mit", JSON.stringify(d)); }
+function renderMITs() {
+  const d = getMITs(), td = today(); const strip = document.getElementById("ms"), list = document.getElementById("mitList");
+  if (!d.tasks.length || d.date !== td) { strip.innerHTML = ""; list.innerHTML = "<div style=\"font-size:9.5px;color:rgba(220,245,240,.28)\">say \"mit\" to set today's top 3</div>"; return; }
+  const rows = d.tasks.map((t, i) => `<div class="msi"><div class="msin">0${i + 1}</div><div class="msit ${d.done[i] ? "done" : ""}">${t}</div><div class="msic ${d.done[i] ? "d" : ""}" onclick="togMIT(${i})"></div></div>`).join("");
+  strip.innerHTML = rows; list.innerHTML = rows;
+}
+window.togMIT = i => { const d = getMITs(); d.done[i] = !d.done[i]; saveMITs(d); renderMITs(); if (d.done.every(Boolean)) speak("All three MITs complete, Boss. Outstanding."); };
+function openMIT() { const d = getMITs(), td = today(); if (d.date === td && d.tasks.length) { ["mit1", "mit2", "mit3"].forEach((id, i) => document.getElementById(id).value = d.tasks[i] || ""); } else ["mit1", "mit2", "mit3"].forEach(id => document.getElementById(id).value = ""); openO("foMIT"); setTimeout(() => document.getElementById("mit1").focus(), 100); }
+function saveMIT() { const t1 = document.getElementById("mit1").value.trim(), t2 = document.getElementById("mit2").value.trim(), t3 = document.getElementById("mit3").value.trim(); const tasks = [t1, t2, t3].filter(Boolean); if (!tasks.length) { toast("Enter at least one MIT, Boss."); return; } saveMITs({ date: today(), tasks, done: tasks.map(() => false) }); closeO("foMIT"); renderMITs(); speak(`${tasks.length} MITs locked in, Boss. ${tasks[0]} leads the charge.`); }
 
 // ═══════════════════════════════════
-// WEEKLY PLANNING
+// COUNTDOWN CHRONOMETER
 // ═══════════════════════════════════
-let plStep=0;
-function openPL(){plStep=0;mkDots("plDots",4,0);["plS0","plS1","plS2","plS3","plS4"].forEach((id,i)=>document.getElementById(id).className="fst"+(i===0?" active":""));["plA0","plA1","plA2a","plA2b","plA2c","plA3"].forEach(id=>document.getElementById(id).value="");document.getElementById("plNext").innerText="next →";document.getElementById("plNext").onclick=plAdv;openO("foPL");speak("Monday planning ritual. How was last week, Boss?");setTimeout(()=>document.getElementById("plA0").focus(),200);}
-function plAdv(){if(plStep<3){plStep++;["plS0","plS1","plS2","plS3","plS4"].forEach((id,i)=>document.getElementById(id).className="fst"+(i===plStep?" active":""));mkDots("plDots",4,plStep);speak(["What is your main intention?","Name your 3 focus areas.","What will you protect time for?"][plStep-1]);if(plStep===3)document.getElementById("plNext").innerText="lock in week";}
-  else{const rev=document.getElementById("plA0").value.trim(),int_=document.getElementById("plA1").value.trim(),f1=document.getElementById("plA2a").value.trim(),f2=document.getElementById("plA2b").value.trim(),f3=document.getElementById("plA2c").value.trim(),prot=document.getElementById("plA3").value.trim();
-    const plan={date:today(),review:rev,intention:int_,focuses:[f1,f2,f3].filter(Boolean),protect:prot};
-    const log=JSON.parse(localStorage.getItem("fri_pllog")||"[]");log.push(plan);if(log.length>12)log.shift();localStorage.setItem("fri_pllog",JSON.stringify(log));
-    if(int_&&!reminders.includes("INTENTION: "+int_)){reminders.unshift("INTENTION: "+int_);localStorage.setItem("fri_rem",JSON.stringify(reminders));renderTasks();}
-    document.getElementById("plSum").innerHTML=`<b style="color:rgba(184,138,255,.5)">intention:</b> ${int_||"—"}<br><br><b style="color:rgba(95,255,212,.5)">focuses:</b> ${[f1,f2,f3].filter(Boolean).join(" · ")||"—"}<br><br><b style="color:rgba(95,255,212,.4)">protected time:</b> ${prot||"—"}`;
-    ["plS0","plS1","plS2","plS3"].forEach(id=>document.getElementById(id).className="fst");document.getElementById("plS4").className="fst active";
-    document.getElementById("plNext").innerText="close";document.getElementById("plNext").onclick=()=>{closeO("foPL");document.getElementById("plNext").onclick=plAdv;};
-    speak(`Week locked in, Boss. ${int_?"Intention: "+int_+".":""} Make it count.`);}}
+function loadCD() { const s = JSON.parse(localStorage.getItem("fri_cd") || "null"); if (s) startCD(s.name, s.ts); }
+function startCD(name, ts) {
+  localStorage.setItem("fri_cd", JSON.stringify({ name, ts })); document.getElementById("cdNone").style.display = "none"; document.getElementById("cdShow").style.display = "block"; document.getElementById("cdLbl").innerText = name.toUpperCase(); if (cdInt) clearInterval(cdInt);
+  function tick() {
+    const diff = ts - Date.now(); if (diff <= 0) { ["cdD", "cdH", "cdM", "cdS"].forEach(id => document.getElementById(id).innerText = "00"); clearInterval(cdInt); return; }
+    const days = Math.floor(diff / 86400000), hrs = Math.floor((diff % 86400000) / 3600000), mins = Math.floor((diff % 3600000) / 60000), secs = Math.floor((diff % 60000) / 1000);
+    document.getElementById("cdD").innerText = String(days).padStart(2, "0"); document.getElementById("cdH").innerText = String(days).padStart(2, "0"); document.getElementById("cdH").innerText = String(hrs).padStart(2, "0"); document.getElementById("cdM").innerText = String(mins).padStart(2, "0"); document.getElementById("cdS").innerText = String(secs).padStart(2, "0");
+    days === 0 ? document.getElementById("cdDigs").classList.add("cdug") : document.getElementById("cdDigs").classList.remove("cdug");
+  }
+  tick(); cdInt = setInterval(tick, 1000);
+}
 
 // ═══════════════════════════════════
-// WEEKLY REPORT
+// END OF DAY SHUTDOWN PROTOCOL (Stateless step execution)
 // ═══════════════════════════════════
-function showWeekly(){const d=getHD();const now=new Date();const dow=now.getDay();const diff=dow===0?6:dow-1;const mon=new Date(now);mon.setDate(now.getDate()-diff);mon.setHours(0,0,0,0);const sun=new Date(mon);sun.setDate(mon.getDate()+6);
-  document.getElementById("weeklyRange").innerText=`${mon.toLocaleDateString("en-GB",{day:"numeric",month:"short"})} – ${sun.toLocaleDateString("en-GB",{day:"numeric",month:"short",year:"numeric"})}`.toLowerCase();
-  let daysIn=0,wkXP=0,hcnt={};d.habits.forEach((_,hi)=>hcnt[hi]=0);
-  for(let i=0;i<7;i++){const day=new Date(mon);day.setDate(mon.getDate()+i);const ds=d2s(day);if(d.history[ds]&&d.history[ds].length>0){daysIn++;d.history[ds].forEach(hi=>{wkXP+=d.habits[hi]?d.habits[hi].xp:0;if(hcnt[hi]!==undefined)hcnt[hi]++;});}}
-  const sdL=JSON.parse(localStorage.getItem("fri_sdlog")||"[]").filter(e=>{const dt=new Date(e.date);return dt>=mon&&dt<=sun;});
-  const plL=JSON.parse(localStorage.getItem("fri_pllog")||"[]").find(e=>{const dt=new Date(e.date);return dt>=mon&&dt<=sun;});
-  let html=`<div class="wrs"><div class="wrh">hunter stats</div><div class="wrr"><span>days checked in</span><span>${daysIn}/7</span></div><div class="wrr"><span>xp earned</span><span>+${wkXP}</span></div><div class="wrr"><span>current streak</span><span>${d.streak}d</span></div><div class="wrr"><span>total xp</span><span>${d.totalXp}</span></div><div class="wrr"><span>rank</span><span>${RANKS[getRank(d.totalXp)]}</span></div></div>`;
-  html+=`<div class="wrs"><div class="wrh">habit breakdown</div>${d.habits.map((h,hi)=>`<div class="whr"><span style="min-width:90px">${h.name}</span><div class="whb"><div class="whbf" style="width:${Math.round((hcnt[hi]||0)/7*100)}%"></div></div><span style="min-width:28px;text-align:right;color:rgba(184,138,255,.7)">${hcnt[hi]||0}/7</span></div>`).join("")}</div>`;
-  if(plL)html+=`<div class="wrs"><div class="wrh">week intention</div><div style="font-size:11px;color:rgba(220,245,240,.7);line-height:1.6;padding:6px 0">${plL.intention||"—"}</div>${plL.focuses.length?`<div style="font-size:8.5px;color:rgba(95,255,212,.4);margin-top:5px;letter-spacing:1px">focuses: ${plL.focuses.join(" · ")}</div>`:""}</div>`;
-  if(sdL.length)html+=`<div class="wrs"><div class="wrh">shutdown logs (${sdL.length})</div>${sdL.slice(-3).map(e=>`<div style="padding:5px 0;border-bottom:1px solid rgba(255,255,255,.02)"><div style="font-size:7px;color:rgba(95,255,212,.3);letter-spacing:2px;margin-bottom:3px">${e.date}</div><div style="font-size:9.5px;color:rgba(220,245,240,.5);line-height:1.5">✓ ${e.finished||"—"}</div></div>`).join("")}</div>`;
-  html+=`<div class="wrs"><div class="wrh">open tasks</div><div style="font-size:10px;color:rgba(220,245,240,.55);line-height:2">${reminders.length?reminders.join("<br>"):"No open tasks."}</div></div>`;
-  document.getElementById("weeklyContent").innerHTML=html;togP("pWeekly");
-  speak(`Weekly report, Boss. ${daysIn} check-in days, ${wkXP} xp this week.`);}
+let sdStep = 0;
+function mkDots(id, n, cur) { const el = document.getElementById(id); if (!el) return; el.innerHTML = ""; for (let i = 0; i < n; i++) { const d = document.createElement("div"); d.className = "fd " + (i < cur ? "done" : i === cur ? "cur" : ""); el.appendChild(d); } }
+
+function openSD() {
+  sdStep = 0; mkDots("sdDots", 3, 0);
+  ["sdS0", "sdS1", "sdS2", "sdS3"].forEach((id, i) => document.getElementById(id).className = "fst" + (i === 0 ? " active" : ""));
+  ["sdA0", "sdA1", "sdA2"].forEach(id => document.getElementById(id).value = "");
+  document.getElementById("sdNext").innerText = "next →";
+  openO("foSD");
+  speak("End of day. What did you finish today, Boss?");
+  setTimeout(() => document.getElementById("sdA0").focus(), 200);
+}
+
+function sdAdv() {
+  if (sdStep === 0) {
+    sdStep = 1;
+    ["sdS0", "sdS1", "sdS2", "sdS3"].forEach((id, i) => document.getElementById(id).className = "fst" + (i === 1 ? " active" : ""));
+    mkDots("sdDots", 3, 1);
+    speak("What's still pending?");
+    setTimeout(() => document.getElementById("sdA1").focus(), 100);
+  } else if (sdStep === 1) {
+    sdStep = 2;
+    ["sdS0", "sdS1", "sdS2", "sdS3"].forEach((id, i) => document.getElementById(id).className = "fst" + (i === 2 ? " active" : ""));
+    mkDots("sdDots", 3, 2);
+    document.getElementById("sdNext").innerText = "complete shutdown";
+    speak("What drained you today, Boss?");
+    setTimeout(() => document.getElementById("sdA2").focus(), 100);
+  } else if (sdStep === 2) {
+    sdStep = 3;
+    const fin = document.getElementById("sdA0").value.trim(), pend = document.getElementById("sdA1").value.trim(), drain = document.getElementById("sdA2").value.trim();
+    const log = JSON.parse(localStorage.getItem("fri_sdlog") || "[]");
+    log.push({ date: today(), finished: fin, pending: pend, drained: drain });
+    if (log.length > 30) log.shift(); localStorage.setItem("fri_sdlog", JSON.stringify(log));
+    if (pend) {
+      pend.split(/[,\n]+/).map(t => t.trim()).filter(Boolean).forEach(t => {
+        if (!reminders.includes(t)) { reminders.push(t); localStorage.setItem("fri_rem", JSON.stringify(reminders)); }
+      });
+    }
+    renderTasks();
+    document.getElementById("sdSum").innerHTML = `<b style="color:rgba(95,255,212,.5)">finished:</b> ${fin || "—"}<br><br><b style="color:rgba(184,138,255,.5)">pending:</b> ${pend || "—"}<br><br><b style="color:rgba(255,120,140,.5)">drained by:</b> ${drain || "—"}`;
+    ["sdS0", "sdS1", "sdS2"].forEach(id => document.getElementById(id).className = "fst");
+    document.getElementById("sdS3").className = "fst active";
+    document.getElementById("sdNext").innerText = "close";
+    speak("Shutdown complete. Pending items saved to your registry. Rest well, Boss.");
+  } else {
+    closeO("foSD");
+  }
+}
 
 // ═══════════════════════════════════
-// TIMEBOX
+// MONDAY WEEKLY PLANNING
 // ═══════════════════════════════════
-async function timeboxDay(tasks){if(!API_KEY){speak("Need my neural key, Boss.");return;}const ts=tasks||reminders.join(", ");if(!ts){speak("No tasks to schedule, Boss.");return;}speak("Generating schedule, Boss.");setSt("scheduling","warn");
-  try{const now=new Date();const r=await fetch(GROQ,{method:"POST",headers:{"Content-Type":"application/json","Authorization":`Bearer ${API_KEY}`},body:JSON.stringify({model:"llama-3.3-70b-versatile",messages:[{role:"system",content:"Output ONLY a JSON array. Each object has keys \"time\" (string e.g. \"9:00\") and \"task\" (string). Include realistic breaks. No markdown, no explanation, pure JSON array only."},{role:"user",content:`It is ${now.getHours()}:${String(now.getMinutes()).padStart(2,"0")}. Schedule these tasks for today: ${ts}`}]})});const data=await r.json();let raw=data.choices[0].message.content.trim().replace(/\`\`\`json?|\`\`\`/g,"").trim();const slots=JSON.parse(raw);document.getElementById("timeboxList").innerHTML=slots.map(s=>`<div class="tbs"><div class="tbt">${s.time}</div><div class="tbk">${s.task}</div></div>`).join("");const p=document.getElementById("pTimebox");p.classList.add("show");front(p);speak(`Schedule ready. ${slots.length} blocks from ${slots[0]?.time}, Boss.`);}
-  catch(e){document.getElementById("timeboxList").innerHTML="<div style=\"font-size:9px;color:rgba(255,120,140,.5)\">scheduling failed — try again</div>";speak("Couldn't generate the schedule, Boss.");}
-  setSt("online","on");}
+let plStep = 0;
+function openPL() {
+  plStep = 0; mkDots("plDots", 4, 0);
+  ["plS0", "plS1", "plS2", "plS3", "plS4"].forEach((id, i) => document.getElementById(id).className = "fst" + (i === 0 ? " active" : ""));
+  ["plA0", "plA1", "plA2a", "plA2b", "plA2c", "plA3"].forEach(id => document.getElementById(id).value = "");
+  document.getElementById("plNext").innerText = "next →";
+  openO("foPL");
+  speak("Monday planning ritual. How was last week, Boss?");
+  setTimeout(() => document.getElementById("plA0").focus(), 200);
+}
+
+function plAdv() {
+  if (plStep < 3) {
+    plStep++;
+    ["plS0", "plS1", "plS2", "plS3", "plS4"].forEach((id, i) => document.getElementById(id).className = "fst" + (i === plStep ? " active" : ""));
+    mkDots("plDots", 4, plStep);
+    speak(["What is your main intention?", "Name your 3 focus areas.", "What will you protect time for?"][plStep - 1]);
+    if (plStep === 3) document.getElementById("plNext").innerText = "lock in week";
+    setTimeout(() => document.getElementById("plS" + plStep).querySelector(".fi")?.focus(), 100);
+  } else if (plStep === 3) {
+    plStep = 4;
+    const rev = document.getElementById("plA0").value.trim(), int_ = document.getElementById("plA1").value.trim(), f1 = document.getElementById("plA2a").value.trim(), f2 = document.getElementById("plA2b").value.trim(), f3 = document.getElementById("plA2c").value.trim(), prot = document.getElementById("plA3").value.trim();
+    const plan = { date: today(), review: rev, intention: int_, focuses: [f1, f2, f3].filter(Boolean), protect: prot };
+    const log = JSON.parse(localStorage.getItem("fri_pllog") || "[]"); log.push(plan); if (log.length > 12) log.shift(); localStorage.setItem("fri_pllog", JSON.stringify(log));
+    if (int_ && !reminders.includes("INTENTION: " + int_)) { reminders.unshift("INTENTION: " + int_); localStorage.setItem("fri_rem", JSON.stringify(reminders)); renderTasks(); }
+    document.getElementById("plSum").innerHTML = `<b style="color:rgba(184,138,255,.5)">intention:</b> ${int_ || "—"}<br><br><b style="color:rgba(95,255,212,.5)">focuses:</b> ${[f1, f2, f3].filter(Boolean).join(" · ") || "—"}<br><br><b style="color:rgba(95,255,212,.4)">protected time:</b> ${prot || "—"}`;
+    ["plS0", "plS1", "plS2", "plS3"].forEach(id => document.getElementById(id).className = "fst"); document.getElementById("plS4").className = "fst active";
+    document.getElementById("plNext").innerText = "close";
+    speak(`Week locked in, Boss. Intention is set. Make it count.`);
+  } else {
+    closeO("foPL");
+  }
+}
 
 // ═══════════════════════════════════
-// ON THIS DAY
+// WEEKLY PROGRESS PROGRESSIONS
 // ═══════════════════════════════════
-async function onThisDay(){if(!API_KEY)return;const ds=new Date().toLocaleDateString("en-US",{month:"long",day:"numeric"});
-  try{const r=await fetch(GROQ,{method:"POST",headers:{"Content-Type":"application/json","Authorization":`Bearer ${API_KEY}`},body:JSON.stringify({model:"llama-3.3-70b-versatile",messages:[{role:"system",content:"One fascinating historical fact for this date. One sentence, under 28 words. Start with the year. No preamble."},{role:"user",content:`Fact for ${ds}`}]})});const d=await r.json();const fact=d.choices[0].message.content;addLog("FRIDAY",`<span style="font-size:7.5px;letter-spacing:3px;color:rgba(95,255,212,.4)">ON THIS DAY</span><br>${fact}`,true);setTimeout(()=>speak("On this day — "+fact),600);}catch(e){}}
+function showWeekly() {
+  const d = getHD(); const now = new Date(); const dow = now.getDay(); const diff = dow === 0 ? 6 : dow - 1; const mon = new Date(now); mon.setDate(now.getDate() - diff); mon.setHours(0, 0, 0, 0); const sun = new Date(mon); sun.setDate(mon.getDate() + 6);
+  document.getElementById("weeklyRange").innerText = `${mon.toLocaleDateString("en-GB", { day: "numeric", month: "short" })} – ${sun.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}`.toLowerCase();
+  let daysIn = 0, wkXP = 0, hcnt = {}; d.habits.forEach((_, hi) => hcnt[hi] = 0);
+  for (let i = 0; i < 7; i++) { const day = new Date(mon); day.setDate(mon.getDate() + i); const ds = d2s(day); if (d.history[ds] && d.history[ds].length > 0) { daysIn++; d.history[ds].forEach(hi => { wkXP += d.habits[hi] ? d.habits[hi].xp : 0; if (hcnt[hi] !== undefined) hcnt[hi]++; }); } }
+  const sdL = JSON.parse(localStorage.getItem("fri_sdlog") || "[]").filter(e => { const dt = new Date(e.date); return dt >= mon && dt <= sun; });
+  const plL = JSON.parse(localStorage.getItem("fri_pllog") || "[]").find(e => { const dt = new Date(e.date); return dt >= mon && dt <= sun; });
+  let html = `<div class="wrs"><div class="wrh">hunter stats</div><div class="wrr"><span>days checked in</span><span>${daysIn}/7</span></div><div class="wrr"><span>xp earned</span><span>+${wkXP}</span></div><div class="wrr"><span>current streak</span><span>${d.streak}d</span></div><div class="wrr"><span>total xp</span><span>${d.totalXp}</span></div><div class="wrr"><span>rank</span><span>${RANKS[getRank(d.totalXp)]}</span></div></div>`;
+  html += `<div class="wrs"><div class="wrh">habit breakdown</div>${d.habits.map((h, hi) => `<div class="whr"><span style="min-width:90px">${h.name}</span><div class="whb"><div class="whbf" style="width:${Math.round((hcnt[hi] || 0) / 7 * 100)}%"></div></div><span style="min-width:28px;text-align:right;color:rgba(184,138,255,.7)">${hcnt[hi] || 0}/7</span></div>`).join("")}</div>`;
+  if (plL) html += `<div class="wrs"><div class="wrh">week intention</div><div style="font-size:11px;color:rgba(220,245,240,.7);line-height:1.6;padding:6px 0">${plL.intention || "—"}</div>${plL.focuses.length ? `<div style="font-size:8.5px;color:rgba(95,255,212,.4);margin-top:5px;letter-spacing:1px">focuses: ${plL.focuses.join(" · ")}</div>` : ""}</div>`;
+  if (sdL.length) html += `<div class="wrs"><div class="wrh">shutdown logs (${sdL.length})</div>${sdL.slice(-3).map(e => `<div style="padding:5px 0;border-bottom:1px solid rgba(255,255,255,.02)"><div style="font-size:7px;color:rgba(95,255,212,.3);letter-spacing:2px;margin-bottom:3px">${e.date}</div><div style="font-size:9.5px;color:rgba(220,245,240,.5);line-height:1.5">✓ ${e.finished || "—"}</div></div>`).join("")}</div>`;
+  html += `<div class="wrs"><div class="wrh">open tasks</div><div style="font-size:10px;color:rgba(220,245,240,.55);line-height:2">${reminders.length ? reminders.join("<br>") : "No open tasks."}</div></div>`;
+  document.getElementById("weeklyContent").innerHTML = html; togP("pWeekly");
+  speak(`Weekly report, Boss. ${daysIn} check-in days, ${wkXP} xp accumulated this week.`);
+}
 
 // ═══════════════════════════════════
-// DAILY TRIGGERS
+// AI AGENDA TIMEBOXING SYSTEM
 // ═══════════════════════════════════
-function checkTriggers(){const now=new Date(),h=now.getHours(),dow=now.getDay();if(localStorage.getItem("fri_trig")===today())return;localStorage.setItem("fri_trig",today());
-  if(dow===1&&h>=7&&h<=11)setTimeout(()=>speak("Good morning, Boss. It's Monday — say 'weekly planning' when ready."),4000);
-  if(dow>=1&&dow<=5&&h>=7&&h<=10){const m=getMITs();if(m.date!==today())setTimeout(()=>speak("Boss, your MITs aren't set yet today. Say 'MIT' when ready."),6000);}
-  if(dow===0&&h>=9)setTimeout(()=>speak("It's Sunday, Boss. Say 'weekly report' to review your week."),5000);}
+async function callGeminiTimebox(ts) {
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+  const now = new Date();
+  const systemPrompt = "Output ONLY a JSON array. Each object has keys \"time\" (string e.g. \"9:00\") and \"task\" (string). Include realistic breaks. No markdown, no explanation, pure JSON array only.";
+  const prompt = `It is ${now.getHours()}:${String(now.getMinutes()).padStart(2, "0")}. Schedule these tasks for today: ${ts}`;
+  
+  const payload = {
+    contents: [{ parts: [{ text: prompt }] }],
+    systemInstruction: { parts: [{ text: systemPrompt }] },
+    generationConfig: { responseMimeType: "application/json" }
+  };
+
+  let delay = 1000;
+  for (let i = 0; i < 5; i++) {
+    try {
+      const response = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+      if (!response.ok) throw new Error();
+      const result = await response.json();
+      const text = result.candidates?.[0]?.content?.parts?.[0]?.text;
+      if (text) return text;
+    } catch (e) {
+      if (i === 4) throw e;
+      await new Promise(r => setTimeout(r, delay));
+      delay *= 2;
+    }
+  }
+}
+
+async function timeboxDay(tasks) {
+  const hasGemini = (typeof apiKey !== 'undefined' && apiKey !== "");
+  if (!API_KEY && !hasGemini) { speak("Need my neural key, Boss."); return; }
+  const ts = tasks || reminders.join(", ");
+  if (!ts) { speak("No tasks to schedule, Boss."); return; }
+  speak("Generating schedule, Boss.");
+  setSt("scheduling", "warn");
+  try {
+    let raw = "";
+    if (API_KEY) {
+      const now = new Date();
+      const r = await fetch(GROQ, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${API_KEY}` },
+        body: JSON.stringify({
+          model: "llama-3.3-70b-versatile",
+          messages: [
+            { role: "system", content: "Output ONLY a JSON array. Each object has keys \"time\" (string e.g. \"9:00\") and \"task\" (string). Include realistic breaks. No markdown, no explanation, pure JSON array only." },
+            { role: "user", content: `It is ${now.getHours()}:${String(now.getMinutes()).padStart(2, "0")}. Schedule these tasks for today: ${ts}` }
+          ]
+        })
+      });
+      const data = await r.json();
+      raw = data.choices[0].message.content.trim().replace(/\`\`\`json?|\`\`\`/g, "").trim();
+    } else {
+      raw = await callGeminiTimebox(ts);
+    }
+    const slots = JSON.parse(raw);
+    document.getElementById("timeboxList").innerHTML = slots.map(s => `<div class="tbs"><div class="tbt">${s.time}</div><div class="tbk">${s.task}</div></div>`).join("");
+    const p = document.getElementById("pTimebox"); p.classList.add("show"); front(p);
+    speak(`Schedule ready. ${slots.length} blocks from ${slots[0]?.time}, Boss.`);
+  }
+  catch (e) {
+    document.getElementById("timeboxList").innerHTML = "<div style=\"font-size:9px;color:rgba(255,120,140,.5)\">scheduling failed — try again</div>";
+    speak("Couldn't generate the schedule, Boss.");
+  }
+  setSt("online", "on");
+}
 
 // ═══════════════════════════════════
-// MODE
+// ON THIS DAY (Cognitive Historical Agent)
 // ═══════════════════════════════════
-function setMode(m){const map={standard:{s:"as",l:"",a:"",lbl:"standard"},stealth:{s:"",l:"al",a:"",lbl:"stealth"},alert:{s:"",l:"",a:"aa",lbl:"alert"}};const mc=map[m];
-  ["mS","mL","mA"].forEach(id=>document.getElementById(id).className="mdot");if(mc.s)document.getElementById("mS").classList.add("as");if(mc.l)document.getElementById("mL").classList.add("al");if(mc.a)document.getElementById("mA").classList.add("aa");document.getElementById("modeLbl").innerText=mc.lbl;document.getElementById("modet").innerText=mc.lbl;speak(`${m} mode, Boss.`);}
+async function onThisDay() {
+  const hasGemini = (typeof apiKey !== 'undefined' && apiKey !== "");
+  if (!API_KEY && !hasGemini) return;
+  const ds = new Date().toLocaleDateString("en-US", { month: "long", day: "numeric" });
+  try {
+    let fact = "";
+    if (API_KEY) {
+      const r = await fetch(GROQ, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${API_KEY}` },
+        body: JSON.stringify({
+          model: "llama-3.3-70b-versatile",
+          messages: [
+            { role: "system", content: "One fascinating historical fact for this date. One sentence, under 28 words. Start with the year. No preamble." },
+            { role: "user", content: `Fact for ${ds}` }
+          ]
+        })
+      });
+      const d = await r.json();
+      fact = d.choices[0].message.content;
+    } else {
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+      const payload = {
+        contents: [{ parts: [{ text: `Fact for ${ds}` }] }],
+        systemInstruction: { parts: [{ text: "One fascinating historical fact for this date. One sentence, under 28 words. Start with the year. No preamble." }] }
+      };
+      const response = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+      const result = await response.json();
+      fact = result.candidates?.[0]?.content?.parts?.[0]?.text || "";
+    }
+    if (fact) {
+      addLog("FRIDAY", `<span style="font-size:7.5px;letter-spacing:3px;color:rgba(95,255,212,.4)">ON THIS DAY</span><br>${fact}`, true);
+      setTimeout(() => speak("On this day — " + fact), 600);
+    }
+  } catch (e) { }
+}
 
 // ═══════════════════════════════════
-// COMMANDS
+// DAILY METRIC TRIGGERS
 // ═══════════════════════════════════
-function openYT(url,title){document.getElementById("trackTitle").innerText=title||"stream";const w=window.open(url,"_blank");if(!w){document.getElementById("pw2").style.display="block";addLog("FRIDAY",`Blocked. <a href="${url}" target="_blank">open ${title}</a>`,true);}else document.getElementById("pw2").style.display="none";}
-function toast(msg){const el=document.getElementById("toast");el.innerText=msg;el.classList.add("show");setTimeout(()=>el.classList.remove("show"),4000);}
-function doTimer(s){if(timerInt)clearInterval(timerInt);let left=s;const ring=document.getElementById("timerRing");ring.style.strokeDashoffset=0;speak(`${s} seconds, Boss.`);timerInt=setInterval(()=>{left--;ring.style.strokeDashoffset=740-(left/s)*740;if(left<=0){clearInterval(timerInt);speak("Done, Boss.");ring.style.strokeDashoffset=740;}},1000);}
-async function callAI(p){try{const r=await fetch(GROQ,{method:"POST",headers:{"Content-Type":"application/json","Authorization":`Bearer ${API_KEY}`},body:JSON.stringify({model:"llama-3.3-70b-versatile",messages:[{role:"system",content:"You are F.R.I.D.A.Y. — Tony Stark's AI. Warm, capable, direct, quietly witty. Address user as Boss. Under 50 words."},{role:"user",content:p}]})});if(!r.ok)throw new Error();const d=await r.json();const reply=d.choices[0].message.content;addLog("FRIDAY",reply,true);speak(reply);}catch(e){addLog("FRIDAY","Neural link unstable.",true);speak("Link unstable, Boss.");}}
-
-async function handleInput(cmd){const q=cmd.toLowerCase().trim();if(!q)return;
-  if(q.includes("check in")||q.includes("daily check")){openO("foCI");prepCI();return;}
-  if(q==="shutdown"||q.includes("end of day")){openSD();return;}
-  if(q.includes("weekly report")){showWeekly();return;}
-  if(q.includes("weekly planning")||q.includes("monday planning")){openPL();return;}
-  if(q==="mit"||q.includes("most important")){openMIT();return;}
-  if(q.includes("timebox")||q.includes("schedule my day")){let t=q;["friday","timebox","schedule my day"].forEach(w=>t=t.replace(new RegExp("\\b"+w+"\\b","gi"),""));timeboxDay(t.trim()||null);return;}
-  if(q.includes("countdown")){openO("foCD");return;}
-  if(q.includes("research")||q.includes("search for")){let t=q;["friday","research","search for"].forEach(w=>t=t.replace(new RegExp("\\b"+w+"\\b","gi"),""));const topic=t.trim()||"neural networks";speak("Searching, Boss.");const links=[{n:"google",u:`https://www.google.com/search?q=${encodeURIComponent(topic)}`},{n:"wikipedia",u:`https://en.wikipedia.org/wiki/Special:Search?search=${encodeURIComponent(topic)}`},{n:"youtube",u:`https://www.youtube.com/results?search_query=${encodeURIComponent(topic)}`}];let h="<div>";links.forEach(l=>{const w=window.open(l.u,"_blank");h+=`<a href="${l.u}" target="_blank">${l.n}${w?"":" [blocked]"}</a>  `;});h+="</div>";addLog("FRIDAY",h,true);return;}
-  if(q.includes("timer for")){const m=q.match(/\d+/);m?doTimer(parseInt(m[0])):speak("How long, Boss?");return;}
-  if(q.includes("remind me to")){const task=q.split("remind me to").pop().trim();if(task){reminders.push(task);localStorage.setItem("fri_rem",JSON.stringify(reminders));renderTasks();const p=document.getElementById("pTasks");if(!p.classList.contains("show")){p.classList.add("show");front(p);}speak(`Logged: ${task}.`);}return;}
-  if(q.includes("my reminders")||q.includes("my tasks")){!reminders.length?speak("No tasks, Boss."):speak(`${reminders.length} tasks: ${reminders.join(", ")}.`);return;}
-  if(q.includes("weather")||q.includes("air")){wx.temp!==null?speak(`${wx.temp} degrees. Air: ${wx.cond}.`):speak("Sensors calibrating, Boss.");return;}
-  if(q.startsWith("play ")||q.includes("open youtube")){let s=q;["friday","play","open youtube"].forEach(w=>s=s.replace(new RegExp("\\b"+w+"\\b","gi"),""));s=s.trim();s?(openYT(`https://www.youtube.com/results?search_query=${encodeURIComponent(s)}`,s),speak(`Streaming ${s}, Boss.`)):(openYT(pl[0].u,pl[0].t),speak("Default stream."));return;}
-  if(q==="time"||q.endsWith(" time")||q.startsWith("what time")){speak(`${new Date().toLocaleTimeString()}, Boss.`);return;}
-  if(q.includes("stealth")){setMode("stealth");return;}if(q.includes("alert mode")){setMode("alert");return;}if(q.includes("standard mode")){setMode("standard");return;}
-  if(q.includes("stop")||q==="sleep"){stopLoop();speak("Resting, Boss.");return;}
-  if(q.includes("news")){openNews();return;}
-  if(!API_KEY){checkM();speak("Need my neural key, Boss.");return;}
-  setSt("processing","warn");await callAI(cmd);setSt("online","on");}
+function checkTriggers() {
+  const now = new Date(), h = now.getHours(), dow = now.getDay(); if (localStorage.getItem("fri_trig") === today()) return; localStorage.setItem("fri_trig", today());
+  if (dow === 1 && h >= 7 && h <= 11) setTimeout(() => speak("Good morning, Boss. It's Monday — say 'weekly planning' when you are ready."), 4000);
+  if (dow >= 1 && dow <= 5 && h >= 7 && h <= 10) { const m = getMITs(); if (m.date !== today()) setTimeout(() => speak("Boss, your MITs aren't set yet today. Say 'MIT' when you have a moment."), 6000); }
+  if (dow === 0 && h >= 9) setTimeout(() => speak("It's Sunday, Boss. Say 'weekly report' to review your weekly habits."), 5000);
+}
 
 // ═══════════════════════════════════
-// BIND UI
+// SCI-FI UI DISPLAY MODE
 // ═══════════════════════════════════
-function bindUI(){
-  document.getElementById("saveKey").onclick=()=>{const v=document.getElementById("apiKey").value.trim();if(!v){document.getElementById("api").classList.remove("show");addLog("FRIDAY","Light mode active.",true);return;}if(v.startsWith("gsk_")){localStorage.setItem("fri_key",v);API_KEY=v;document.getElementById("api").classList.remove("show");addLog("FRIDAY","Neural key authenticated. Fully online, Boss.",true);speak("Authenticated. Full cognition online, Boss.");}else toast("Invalid key — must start with gsk_");};
-  document.getElementById("apiKey").onkeydown=e=>{if(e.key==="Enter")document.getElementById("saveKey").click();};
-  document.getElementById("skipApi").onclick=()=>{document.getElementById("api").classList.remove("show");addLog("FRIDAY","Light mode active.",true);};
-  document.getElementById("sendBtn").onclick=()=>{const el=document.getElementById("cmdInput"),v=el.value.trim();if(v){addLog("BOSS",v);handleInput(v);el.value=="";}};
-  document.getElementById("cmdInput").onkeydown=e=>{if(e.key==="Enter")document.getElementById("sendBtn").click();};
-  document.getElementById("newsBtn").onclick=openNews;
-  document.getElementById("ciConfirm").onclick=confirmCI;
-  document.getElementById("mitSave").onclick=saveMIT;
-  ["mit1","mit2","mit3"].forEach((id,i)=>{document.getElementById(id).onkeydown=e=>{if(e.key==="Enter")i<2?document.getElementById(["mit1","mit2","mit3"][i+1]).focus():saveMIT();};});
-  document.getElementById("cdSave").onclick=()=>{const name=document.getElementById("cdName").value.trim(),dv=document.getElementById("cdDate").value;if(!name||!dv){toast("Enter both name and date, Boss.");return;}startCD(name,new Date(dv+"T23:59:59").getTime());closeO("foCD");speak(`Countdown set for ${name}, Boss.`);};
-  document.getElementById("sdSkip").onclick=()=>closeO("foSD");
-  document.getElementById("plSkip").onclick=()=>closeO("foPL");
-  document.getElementById("playBtn").onclick=()=>openYT(pl[tIdx].u,pl[tIdx].t);
-  document.getElementById("nextBtn").onclick=()=>{tIdx=(tIdx+1)%pl.length;openYT(pl[tIdx].u,pl[tIdx].t);};
-  document.getElementById("prevBtn").onclick=()=>{tIdx=(tIdx-1+pl.length)%pl.length;openYT(pl[tIdx].u,pl[tIdx].t);};
-  document.getElementById("volSlider").oninput=e=>{document.getElementById("volDisp").innerText=e.target.value+"%";vol=e.target.value/100;};
-  document.getElementById("addHabitBtn").onclick=()=>{const inp=document.getElementById("newHabit"),name=inp.value.trim();if(!name)return;const d=getHD();d.habits.push({name,xp:20});saveHD(d);renderHunter();inp.value="";speak(`"${name}" added, Boss.`);};
-  document.getElementById("newHabit").onkeydown=e=>{if(e.key==="Enter")document.getElementById("addHabitBtn").click();};
-  ["foCI","foMIT","foCD","foSD","foPL"].forEach(id=>{document.getElementById(id).addEventListener("click",e=>{if(e.target===document.getElementById(id))closeO(id);});});}
+function setMode(m) {
+  const map = { standard: { s: "as", l: "", a: "", lbl: "standard" }, stealth: { s: "", l: "al", a: "", lbl: "stealth" }, alert: { s: "", l: "", a: "aa", lbl: "alert" } }; const mc = map[m];
+  ["mS", "mL", "mA"].forEach(id => document.getElementById(id).className = "mdot"); if (mc.s) document.getElementById("mS").classList.add("as"); if (mc.l) document.getElementById("mL").classList.add("al"); if (mc.a) document.getElementById("mA").classList.add("aa"); document.getElementById("modeLbl").innerText = mc.lbl; document.getElementById("modet").innerText = mc.lbl; speak(`${m} mode, Boss.`);
+}
+
+// ═══════════════════════════════════
+// SCI-FI AUDIO CONTROL
+// ═══════════════════════════════════
+function openYT(url, title) { document.getElementById("trackTitle").innerText = title || "stream"; const w = window.open(url, "_blank"); if (!w) { document.getElementById("pw2").style.display = "block"; addLog("FRIDAY", `Blocked. <a href="${url}" target="_blank">open ${title}</a>`, true); } else document.getElementById("pw2").style.display = "none"; }
+function toast(msg) { const el = document.getElementById("toast"); el.innerText = msg; el.classList.add("show"); setTimeout(() => el.classList.remove("show"), 4000); }
+
+function doTimer(s) {
+  if (timerInt) clearInterval(timerInt); let left = s; const ring = document.getElementById("timerRing"); ring.style.strokeDashoffset = 0; speak(`${s} seconds starting now, Boss.`);
+  timerInt = setInterval(() => {
+    left--; ring.style.strokeDashoffset = 740 - (left / s) * 740; if (left <= 0) { clearInterval(timerInt); speak("Time is up, Boss."); ring.style.strokeDashoffset = 740; }
+  }, 1000);
+}
+
+// ═══════════════════════════════════
+// COGNITIVE BRAIN INTELLIGENCE
+// ═══════════════════════════════════
+async function callGemini(prompt) {
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+  const systemPrompt = "You are F.R.I.D.A.Y. — Tony Stark's AI. Warm, capable, direct, quietly witty. Address user as Boss. Under 50 words.";
+  const payload = {
+    contents: [{ parts: [{ text: prompt }] }],
+    systemInstruction: { parts: [{ text: systemPrompt }] }
+  };
+
+  let delay = 1000;
+  for (let i = 0; i < 5; i++) {
+    try {
+      const response = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+      if (!response.ok) throw new Error();
+      const result = await response.json();
+      const text = result.candidates?.[0]?.content?.parts?.[0]?.text;
+      if (text) return text;
+    } catch (e) {
+      if (i === 4) throw e;
+      await new Promise(r => setTimeout(r, delay));
+      delay *= 2;
+    }
+  }
+}
+
+async function callAI(p) {
+  try {
+    let reply = "";
+    const hasGemini = (typeof apiKey !== 'undefined' && apiKey !== "");
+
+    if (API_KEY) {
+      const r = await fetch(GROQ, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${API_KEY}` },
+        body: JSON.stringify({
+          model: "llama-3.3-70b-versatile",
+          messages: [
+            { role: "system", content: "You are F.R.I.D.A.Y. — Tony Stark's AI. Warm, capable, direct, quietly witty. Address user as Boss. Under 50 words." },
+            { role: "user", content: p }
+          ]
+        })
+      });
+      if (!r.ok) throw new Error();
+      const d = await r.json();
+      reply = d.choices[0].message.content;
+    } else if (hasGemini) {
+      reply = await callGemini(p);
+    } else {
+      throw new Error("No API key configured");
+    }
+
+    addLog("FRIDAY", reply, true);
+    speak(reply);
+  } catch (e) {
+    addLog("FRIDAY", "Neural link unstable.", true);
+    speak("Neural link unstable, Boss.");
+  }
+}
+
+// ═══════════════════════════════════
+// TRANSACTIONAL CONTROL CENTER
+// ═══════════════════════════════════
+function setBusy(value) {
+  busy = value;
+  if (busy) {
+    safeStop();
+  } else {
+    if (loopOn && !recOn) {
+      schedR();
+    }
+  }
+}
+
+async function handleInput(cmd) {
+  const q = cmd.toLowerCase().trim();
+  if (!q) return;
+
+  transactionActive = true;
+  setBusy(true);
+
+  let speechTriggered = false;
+  const originalSpeak = speak;
+  speak = function (text) {
+    speechTriggered = true;
+    originalSpeak(text);
+  };
+
+  try {
+    if (q.includes("check in") || q.includes("daily check")) {
+      openO("foCI"); prepCI();
+    } else if (q === "shutdown" || q.includes("end of day")) {
+      openSD();
+    } else if (q.includes("weekly report")) {
+      showWeekly();
+    } else if (q.includes("weekly planning") || q.includes("monday planning")) {
+      openPL();
+    } else if (q === "mit" || q.includes("most important")) {
+      openMIT();
+    } else if (q.includes("timebox") || q.includes("schedule my day")) {
+      let t = q; ["friday", "timebox", "schedule my day"].forEach(w => t = t.replace(new RegExp("\\b" + w + "\\b", "gi"), ""));
+      await timeboxDay(t.trim() || null);
+    } else if (q.includes("countdown")) {
+      openO("foCD");
+      speak("Opening countdown protocol, Boss.");
+    } else if (q.includes("research") || q.includes("search for")) {
+      let t = q; ["friday", "research", "search for"].forEach(w => t = t.replace(new RegExp("\\b" + w + "\\b", "gi"), ""));
+      const topic = t.trim() || "neural networks"; speak("Searching, Boss.");
+      const links = [{ n: "google", u: `https://www.google.com/search?q=${encodeURIComponent(topic)}` }, { n: "wikipedia", u: `https://en.wikipedia.org/wiki/Special:Search?search=${encodeURIComponent(topic)}` }, { n: "youtube", u: `https://www.youtube.com/results?search_query=${encodeURIComponent(topic)}` }];
+      let h = "<div>"; links.forEach(l => { const w = window.open(l.u, "_blank"); h += `<a href="${l.u}" target="_blank">${l.n}${w ? "" : " [blocked]"}</a>  `; }); h += "</div>";
+      addLog("FRIDAY", h, true);
+    } else if (q.includes("timer for")) {
+      const m = q.match(/\d+/); m ? doTimer(parseInt(m[0])) : speak("How long, Boss?");
+    } else if (q.includes("remind me to")) {
+      const task = q.split("remind me to").pop().trim();
+      if (task) {
+        reminders.push(task); localStorage.setItem("fri_rem", JSON.stringify(reminders)); renderTasks();
+        const p = document.getElementById("pTasks"); if (!p.classList.contains("show")) { p.classList.add("show"); front(p); }
+        speak(`Logged reminder to ${task}, Boss.`);
+      } else {
+        speak("What should I remind you about, Boss?");
+      }
+    } else if (q.includes("my reminders") || q.includes("my tasks")) {
+      !reminders.length ? speak("You have no pending tasks, Boss.") : speak(`You have ${reminders.length} tasks: ${reminders.join(", ")}.`);
+    } else if (q.includes("weather") || q.includes("air")) {
+      wx.temp !== null ? speak(`The current temperature is ${wx.temp} degrees, and the air quality is ${wx.cond}.`) : speak("Sensors are still calibrating, Boss.");
+    } else if (q.startsWith("play ") || q.includes("open youtube")) {
+      let s = q; ["friday", "play", "open youtube"].forEach(w => s = s.replace(new RegExp("\\b" + w + "\\b", "gi"), "")); s = s.trim();
+      s ? (openYT(`https://www.youtube.com/results?search_query=${encodeURIComponent(s)}`, s), speak(`Streaming ${s} on YouTube, Boss.`)) : (openYT(pl[0].u, pl[0].t), speak("Playing default Stark Expo soundtrack."));
+    } else if (q === "time" || q.endsWith(" time") || q.startsWith("what time")) {
+      const timeStr = new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
+      speak(`The time is ${timeStr}, Boss.`);
+    } else if (q.includes("stealth")) {
+      setMode("stealth");
+    } else if (q.includes("alert mode")) {
+      setMode("alert");
+    } else if (q.includes("standard mode")) {
+      setMode("standard");
+    } else if (q.includes("stop") || q === "sleep") {
+      stopLoop(); speak("Going to standby mode. Speak to you later, Boss.");
+    } else if (q.includes("news")) {
+      openNews(); speak("Opening live global news feed, Boss.");
+    } else {
+      const hasGemini = (typeof apiKey !== 'undefined' && apiKey !== "");
+      if (!API_KEY && !hasGemini) {
+        checkM(); speak("I need my neural link key to process that, Boss.");
+      } else {
+        setSt("processing", "warn");
+        await callAI(cmd);
+        setSt("online", "on");
+      }
+    }
+  } catch (err) {
+    console.error(err);
+    speak("An error occurred in my core systems, Boss.");
+  } finally {
+    speak = originalSpeak;
+    transactionActive = false;
+    if (!currentUtterance) {
+      busy = false;
+      if (loopOn) {
+        schedR();
+      }
+    }
+  }
+}
+
+// ═══════════════════════════════════
+// SCI-FI HUD HANDLERS
+// ═══════════════════════════════════
+function bindUI() {
+  document.getElementById("saveKey").onclick = () => {
+    const v = document.getElementById("apiKey").value.trim();
+    if (!v) { document.getElementById("api").classList.remove("show"); addLog("FRIDAY", "Light mode active.", true); return; }
+    if (v.startsWith("gsk_")) {
+      localStorage.setItem("fri_key", v); API_KEY = v; document.getElementById("api").classList.remove("show");
+      addLog("FRIDAY", "Neural Link: Groq Llama-3.3 Core authenticated. Fully online, Boss.", true);
+      speak("Authenticated. Full cognition online, Boss.");
+    } else {
+      toast("Invalid key — must start with gsk_");
+    }
+  };
+  
+  document.getElementById("apiKey").onkeydown = e => { if (e.key === "Enter") document.getElementById("saveKey").click(); };
+  document.getElementById("skipApi").onclick = () => { document.getElementById("api").classList.remove("show"); addLog("FRIDAY", "Light mode active.", true); };
+  
+  document.getElementById("sendBtn").onclick = () => {
+    const el = document.getElementById("cmdInput"), v = el.value.trim();
+    if (v) {
+      addLog("BOSS", v);
+      handleInput(v);
+      el.value = "";
+    }
+  };
+  
+  document.getElementById("cmdInput").onkeydown = e => { if (e.key === "Enter") document.getElementById("sendBtn").click(); };
+  document.getElementById("newsBtn").onclick = openNews;
+  document.getElementById("ciConfirm").onclick = confirmCI;
+  document.getElementById("mitSave").onclick = saveMIT;
+  
+  ["mit1", "mit2", "mit3"].forEach((id, i) => {
+    document.getElementById(id).onkeydown = e => {
+      if (e.key === "Enter") {
+        if (i < 2) {
+          document.getElementById(["mit1", "mit2", "mit3"][i + 1]).focus();
+        } else {
+          saveMIT();
+        }
+      }
+    };
+  });
+  
+  document.getElementById("cdSave").onclick = () => {
+    const name = document.getElementById("cdName").value.trim(), dv = document.getElementById("cdDate").value;
+    if (!name || !dv) { toast("Enter both name and date, Boss."); return; }
+    startCD(name, new Date(dv + "T23:59:59").getTime());
+    closeO("foCD");
+    speak(`Countdown set for ${name}, Boss.`);
+  };
+  
+  document.getElementById("sdSkip").onclick = () => closeO("foSD");
+  document.getElementById("plSkip").onclick = () => closeO("foPL");
+  document.getElementById("sdNext").onclick = sdAdv;
+  document.getElementById("plNext").onclick = plAdv;
+  
+  document.getElementById("playBtn").onclick = () => openYT(pl[tIdx].u, pl[tIdx].t);
+  document.getElementById("nextBtn").onclick = () => { tIdx = (tIdx + 1) % pl.length; openYT(pl[tIdx].u, pl[tIdx].t); };
+  document.getElementById("prevBtn").onclick = () => { tIdx = (tIdx - 1 + pl.length) % pl.length; openYT(pl[tIdx].u, pl[tIdx].t); };
+  
+  document.getElementById("volSlider").oninput = e => {
+    document.getElementById("volDisp").innerText = e.target.value + "%";
+    vol = e.target.value / 100;
+  };
+  
+  document.getElementById("addHabitBtn").onclick = () => {
+    const inp = document.getElementById("newHabit"), name = inp.value.trim();
+    if (!name) return;
+    const d = getHD();
+    d.habits.push({ name, xp: 20 });
+    saveHD(d);
+    renderHunter();
+    inp.value = "";
+    speak(`"${name}" added, Boss.`);
+  };
+  
+  document.getElementById("newHabit").onkeydown = e => { if (e.key === "Enter") document.getElementById("addHabitBtn").click(); };
+  
+  ["foCI", "foMIT", "foCD", "foSD", "foPL"].forEach(id => {
+    document.getElementById(id).addEventListener("click", e => {
+      if (e.target === document.getElementById(id)) closeO(id);
+    });
+  });
+}
 </script>
 </body>
 </html>
