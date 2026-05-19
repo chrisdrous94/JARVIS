@@ -2,20 +2,20 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-select=no">
 <title>F.R.I.D.A.Y.</title>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300&family=Share+Tech+Mono&family=Orbitron:wght@300;400&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{--t:#5fffd4;--v:#b88aff;--bg:#030208;--ink:rgba(220,245,240,0.9);--tb:rgba(95,255,212,0.1);--vb:rgba(184,138,255,0.1)}
-html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--ink);font-family:"Share Tech Mono",monospace}
+html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--ink);font-family:"Share Tech Mono",monospace;touch-action:manipulation}
 #bgc{position:fixed;inset:0;z-index:0;pointer-events:none}
 body::after{content:"";position:absolute;inset:0;z-index:9999;pointer-events:none;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.04) 2px,rgba(0,0,0,0.04) 4px)}
 
 /* BOOT */
-#boot{position:fixed;inset:0;z-index:5000;background:#020106;display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity 1.2s ease}
-.bn{font-family:"Cormorant Garamond",serif;font-weight:300;font-size:clamp(24px,4vw,42px);letter-spacing:18px;color:rgba(95,255,212,0.78);text-shadow:0 0 40px rgba(95,255,212,0.3);margin-bottom:6px}
-.bt{font-size:8px;letter-spacing:5px;color:rgba(95,255,212,0.2);margin-bottom:34px}
+#boot{position:fixed;inset:0;z-index:5000;background:#020106;display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity 1.2s ease;padding:20px;cursor:pointer}
+.bn{font-family:"Cormorant Garamond",serif;font-weight:300;font-size:clamp(24px,6vw,42px);letter-spacing:18px;color:rgba(95,255,212,0.78);text-shadow:0 0 40px rgba(95,255,212,0.3);margin-bottom:6px;text-align:center}
+.bt{font-size:8px;letter-spacing:5px;color:rgba(95,255,212,0.2);margin-bottom:34px;text-align:center}
 .blines{width:min(400px,88vw);min-height:110px;display:flex;flex-direction:column;gap:3px}
 .bl{font-size:9.5px;letter-spacing:1px;color:rgba(95,255,212,0.52);opacity:0;transform:translateY(4px);transition:all .35s}
 .bl.s{opacity:1;transform:none}.bl.ok::after{content:" ·";color:#5fffd4}.bl.w::after{content:" ~";color:#b88aff}
@@ -55,13 +55,13 @@ body::after{content:"";position:absolute;inset:0;z-index:9999;pointer-events:non
 .bbot:hover{border-color:rgba(95,255,212,0.4);color:#5fffd4}
 
 /* MAIN */
-#app{position:relative;z-index:1;width:100vw;height:100vh;padding:52px 0 38px;display:flex;align-items:center;justify-content:center}
+#app{position:relative;z-index:1;width:100vw;height:100vh;padding:52px 0 38px;display:flex;align-items:center;justify-content:center;overflow:hidden}
 
 /* HUB */
-#hub{display:flex;flex-direction:column;align-items:center;width:min(300px,90vw)}
+#hub{display:flex;flex-direction:column;align-items:center;width:min(320px,94vw);max-height:100%;justify-content:center}
 
 /* ORB */
-#ow{position:relative;width:240px;height:240px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+#ow{position:relative;width:240px;height:240px;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:transform 0.3s ease}
 #oc{width:240px;height:240px;cursor:pointer;display:block;border-radius:50%}
 .tsv{position:absolute;top:0;left:0;pointer-events:none}
 .ta{fill:none;stroke:rgba(95,255,212,0.18);stroke-width:1;stroke-dasharray:740;stroke-dashoffset:740;transition:stroke-dashoffset 1s linear}
@@ -91,7 +91,7 @@ body::after{content:"";position:absolute;inset:0;z-index:9999;pointer-events:non
 .msin{font-family:"Orbitron",sans-serif;font-size:8px;color:rgba(95,255,212,0.28);flex-shrink:0}
 .msit{font-size:10px;color:rgba(220,245,240,0.62);flex:1;line-height:1.4}
 .msit.done{text-decoration:line-through;opacity:.25}
-.msic{width:12px;height:12px;border:1px solid rgba(95,255,212,0.18);border-radius:50%;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all .2s}
+.msic{width:14px;height:14px;border:1px solid rgba(95,255,212,0.18);border-radius:50%;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all .2s}
 .msic:hover{border-color:rgba(95,255,212,0.5)}
 .msic.d{background:rgba(95,255,212,0.2);border-color:rgba(95,255,212,0.5)}
 .msic.d::after{content:"·";color:#5fffd4;font-size:14px;line-height:.6}
@@ -105,25 +105,25 @@ body::after{content:"";position:absolute;inset:0;z-index:9999;pointer-events:non
 .cs:hover{color:#5fffd4}
 
 /* DOCK */
-#dock{display:flex;gap:7px;margin-top:14px;flex-wrap:wrap;justify-content:center}
-.dk{display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;padding:8px 11px;border-radius:13px;background:rgba(95,255,212,0.04);border:1px solid rgba(95,255,212,0.09);transition:all .22s;min-width:52px}
+#dock{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:14px;width:100%;max-height:145px;overflow-y:auto;padding-right:2px}
+.dk{display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;padding:6px 4px;border-radius:10px;background:rgba(95,255,212,0.04);border:1px solid rgba(95,255,212,0.09);transition:all .22s;min-width:0;text-align:center}
 .dk:hover{background:rgba(95,255,212,0.09);border-color:rgba(95,255,212,0.28);transform:translateY(-2px);box-shadow:0 4px 16px rgba(95,255,212,0.06)}
 .dk.v{background:rgba(184,138,255,0.04);border-color:rgba(184,138,255,0.09)}
 .dk.v:hover{background:rgba(184,138,255,0.09);border-color:rgba(184,138,255,0.28);box-shadow:0 4px 16px rgba(184,138,255,0.06)}
-.dk-i{font-size:16px;line-height:1}
-.dk-l{font-size:7px;letter-spacing:1.5px;color:rgba(220,245,240,0.4);text-transform:uppercase;white-space:nowrap}
+.dk-i{font-size:14px;line-height:1}
+.dk-l{font-size:6px;letter-spacing:1px;color:rgba(220,245,240,0.4);text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;width:100%}
 .dk.act .dk-l{color:#5fffd4}.dk.v.act .dk-l{color:#b88aff}
 .dk.hot{border-color:rgba(255,80,120,0.42);background:rgba(255,80,120,0.06)}
 .dk.hot .dk-l{color:rgba(255,140,160,0.82);animation:dp 1.2s infinite}
 
 /* MODE */
-.md{display:flex;gap:8px;justify-content:center;margin-top:9px;align-items:center}
+.md{display:flex;gap:8px;justify-content:center;margin-top:9px;align-items:center;width:100%}
 .mdot{width:8px;height:8px;border-radius:50%;cursor:pointer;border:1px solid rgba(95,255,212,0.12);background:transparent;transition:all .3s}
 .mdot.as{background:rgba(95,255,212,0.35);box-shadow:0 0 8px rgba(95,255,212,0.28);border-color:#5fffd4}
 .mdot.al{background:rgba(255,80,120,0.35);box-shadow:0 0 8px rgba(255,80,120,0.28);border-color:#ff5077}
 .mdot.aa{background:rgba(255,215,50,0.35);box-shadow:0 0 8px rgba(255,215,50,0.28);border-color:#ffd732}
 .ml{font-size:7px;letter-spacing:2px;color:rgba(95,255,212,0.2);margin-left:4px}
-.rstb{background:transparent;border:none;color:rgba(95,255,212,0.14);font-size:8px;letter-spacing:1px;cursor:pointer;font-family:"Share Tech Mono",monospace;transition:color .2s;margin-left:auto}
+.rstb{background:transparent;border:none;color:rgba(95,255,212,0.14);font-size:8px;letter-spacing:1px;cursor:pointer;font-family:"Share Tech Mono",monospace;transition:color .2s;margin-left:auto;padding:4px 0}
 .rstb:hover{color:rgba(95,255,212,0.42)}
 
 /* ========== PANEL WINDOWS ========== */
@@ -136,7 +136,7 @@ body::after{content:"";position:absolute;inset:0;z-index:9999;pointer-events:non
 .pw.vp .pwh{border-bottom-color:rgba(184,138,255,0.06)}
 .pwt{font-size:8px;letter-spacing:4px;color:rgba(95,255,212,0.5);text-transform:uppercase}
 .pw.vp .pwt{color:rgba(184,138,255,0.5)}
-.pwx{background:none;border:none;color:rgba(95,255,212,0.28);cursor:pointer;font-size:15px;padding:0 2px;line-height:1;transition:color .2s}
+.pwx{background:none;border:none;color:rgba(95,255,212,0.28);cursor:pointer;font-size:15px;padding:4px 8px;line-height:1;transition:color .2s}
 .pwx:hover{color:#5fffd4}.pw.vp .pwx:hover{color:#b88aff}
 .pwb{padding:14px;overflow-y:auto;flex:1}
 .pwb::-webkit-scrollbar{width:2px}.pwb::-webkit-scrollbar-thumb{background:rgba(95,255,212,0.12);border-radius:2px}
@@ -269,6 +269,99 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:10px;heigh
 .abtn{width:100%;padding:11px;background:transparent;border:1px solid rgba(95,255,212,0.16);color:rgba(95,255,212,0.58);font-family:"Share Tech Mono",monospace;font-size:9.5px;letter-spacing:3px;cursor:pointer;border-radius:11px;transition:all .2s}
 .abtn:hover{border-color:rgba(95,255,212,0.42);color:#5fffd4}
 .ask{margin-top:10px;font-size:8px;letter-spacing:2px;color:rgba(95,255,212,0.18);cursor:pointer;transition:color .2s}.ask:hover{color:rgba(95,255,212,0.48)}
+
+/* =========================================
+   SMARTPHONE RESPONSIVE GENTLE STRUCTURING
+   ========================================= */
+@media (max-width: 768px) {
+  /* Dynamic Panel Overlay Sheet Transition (Tactile Feel) */
+  .pw {
+    position: fixed !important;
+    inset: auto 0 0 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    height: 78vh !important;
+    max-height: 78vh !important;
+    border-radius: 20px 20px 0 0 !important;
+    border-bottom: none !important;
+    border-left: none !important;
+    border-right: none !important;
+    transform: translateY(100%) !important;
+    transition: transform 0.38s cubic-bezier(0.15, 0.85, 0.45, 1) !important;
+    display: flex !important; /* Remain rendering so transitions fire properly */
+    opacity: 0;
+    pointer-events: none;
+  }
+  .pw.show {
+    transform: translateY(0) !important;
+    opacity: 1;
+    pointer-events: auto;
+  }
+  .pwh {
+    cursor: default !important;
+    padding: 18px 16px 10px;
+    position: relative;
+  }
+  /* Decorative tactile grab indicator bar for Bottom-Sheets */
+  .pwh::after {
+    content: "";
+    position: absolute;
+    top: 6px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 44px;
+    height: 4px;
+    background: rgba(95,255,212,0.22);
+    border-radius: 2px;
+  }
+  .pwx {
+    font-size: 18px;
+    padding: 6px 12px;
+  }
+  
+  /* Interface Header/Ticker Adjustments */
+  .tc {
+    letter-spacing: 5px;
+    font-size: 10px;
+  }
+  .tl span:nth-child(3), .tr span:nth-child(1), .tr span:nth-child(2) {
+    display: none; /* Hide cluttered nodes on compact smartphone layouts */
+  }
+  
+  /* Disable absolute font scales for subtitles to optimize verticality */
+  .hs {
+    display: none;
+  }
+}
+
+/* Landscape/Short Screen Scale Mitigation */
+@media (max-height: 680px) {
+  #ow {
+    transform: scale(0.8);
+    margin-top: -15px;
+    margin-bottom: -15px;
+  }
+  .hn {
+    font-size: 18px;
+    margin-top: 3px;
+  }
+  #tr {
+    font-size: 11px;
+    min-height: auto;
+  }
+  #dock {
+    max-height: 105px;
+    margin-top: 8px;
+  }
+  #ms {
+    margin-top: 4px;
+  }
+}
+@media (max-width: 360px) {
+  #dock {
+    grid-template-columns: repeat(3, 1fr); /* 3 column compact format for tiny device screens */
+  }
+}
 </style>
 </head>
 <body>
@@ -586,23 +679,61 @@ const pl = [
 ];
 
 // ═══════════════════════════════════
-// PANEL DRAG (Tactile Support for Touch/Mouse)
+// PANEL DRAG (Tactile Support for Touch/Mouse with Screen Bounds)
 // ═══════════════════════════════════
 let drag = null, zTop = 300;
 document.querySelectorAll(".pw").forEach(p => {
   const handle = p.querySelector(".pwh");
   
   handle.addEventListener("mousedown", e => {
-    if (e.target.classList.contains("pwx")) return;
+    if (e.target.classList.contains("pwx") || window.innerWidth <= 768) return;
     const r = p.getBoundingClientRect();
     drag = { p, ox: e.clientX - r.left, oy: e.clientY - r.top };
   });
 
+  // Touch Drag / Bottom-sheet swipe dismiss track
+  let touchStartY = 0;
+  let touchMoveY = 0;
+
   handle.addEventListener("touchstart", e => {
     if (e.target.classList.contains("pwx")) return;
     const touch = e.touches[0];
-    const r = p.getBoundingClientRect();
-    drag = { p, ox: touch.clientX - r.left, oy: touch.clientY - r.top };
+    
+    if (window.innerWidth > 768) {
+      // Desktop-size dragging
+      const r = p.getBoundingClientRect();
+      drag = { p, ox: touch.clientX - r.left, oy: touch.clientY - r.top };
+    } else {
+      // Mobile Swipe Dismiss initialization
+      touchStartY = touch.clientY;
+      touchMoveY = touchStartY;
+      p.style.transition = "none";
+    }
+  }, { passive: true });
+
+  handle.addEventListener("touchmove", e => {
+    if (window.innerWidth <= 768) {
+      const touch = e.touches[0];
+      touchMoveY = touch.clientY;
+      const diffY = touchMoveY - touchStartY;
+      if (diffY > 0) {
+        // Translate sheet down visually
+        p.style.transform = `translateY(${diffY}px)`;
+      }
+    }
+  }, { passive: true });
+
+  handle.addEventListener("touchend", e => {
+    if (window.innerWidth <= 768) {
+      p.style.transition = "";
+      const diffY = touchMoveY - touchStartY;
+      if (diffY > 120) {
+        // Dismiss Bottom-Sheet if swiped past threshold
+        p.classList.remove("show");
+        speak("Closing module, Boss.");
+      }
+      p.style.transform = "";
+    }
   }, { passive: true });
 
   p.addEventListener("mousedown", () => front(p));
@@ -611,18 +742,22 @@ document.querySelectorAll(".pw").forEach(p => {
 
 document.addEventListener("mousemove", e => {
   if (!drag) return;
-  drag.p.style.left = (e.clientX - drag.ox) + "px";
-  drag.p.style.top = (e.clientY - drag.oy) + "px";
+  const boundX = Math.max(0, Math.min(window.innerWidth - drag.p.offsetWidth, e.clientX - drag.ox));
+  const boundY = Math.max(44, Math.min(window.innerHeight - 32 - drag.p.offsetHeight, e.clientY - drag.oy));
+  drag.p.style.left = boundX + "px";
+  drag.p.style.top = boundY + "px";
   drag.p.style.transform = "none";
   drag.p.style.right = "auto";
   drag.p.style.bottom = "auto";
 });
 
 document.addEventListener("touchmove", e => {
-  if (!drag) return;
+  if (!drag || window.innerWidth <= 768) return;
   const touch = e.touches[0];
-  drag.p.style.left = (touch.clientX - drag.ox) + "px";
-  drag.p.style.top = (touch.clientY - drag.oy) + "px";
+  const boundX = Math.max(0, Math.min(window.innerWidth - drag.p.offsetWidth, touch.clientX - drag.ox));
+  const boundY = Math.max(44, Math.min(window.innerHeight - 32 - drag.p.offsetHeight, touch.clientY - drag.oy));
+  drag.p.style.left = boundX + "px";
+  drag.p.style.top = boundY + "px";
   drag.p.style.transform = "none";
   drag.p.style.right = "auto";
   drag.p.style.bottom = "auto";
@@ -632,7 +767,20 @@ document.addEventListener("mouseup", () => drag = null);
 document.addEventListener("touchend", () => drag = null);
 
 function front(p) { p.style.zIndex = ++zTop; }
-function togP(id) { const p = document.getElementById(id); p.classList.contains("show") ? p.classList.remove("show") : (p.classList.add("show"), front(p)); }
+function togP(id) { 
+  const p = document.getElementById(id); 
+  if (p.classList.contains("show")) {
+    p.classList.remove("show");
+  } else {
+    p.classList.add("show");
+    front(p);
+    // Center Bottom-Sheet or window appropriately
+    if (window.innerWidth > 768) {
+      p.style.top = "90px";
+      p.style.left = "calc(50% - " + (p.offsetWidth / 2) + "px)";
+    }
+  }
+}
 function closeP(id) { document.getElementById(id).classList.remove("show"); }
 function openO(id) { document.getElementById(id).classList.add("show"); }
 function closeO(id) { document.getElementById(id).classList.remove("show"); }
@@ -688,7 +836,6 @@ function initOrb() {
     const cg = ctx.createRadialGradient(cx, cy, cR - 2, cx, cy, cR + 17); cg.addColorStop(0, C.p + (orbState !== "idle" ? .15 : .06) + ")"); cg.addColorStop(1, "transparent"); ctx.beginPath(); ctx.arc(cx, cy, cR + 17, 0, Math.PI * 2); ctx.fillStyle = cg; ctx.fill();
     requestAnimationFrame(draw);
   } draw();
-  document.getElementById("oc").addEventListener("click", doSingleListen);
 }
 
 // COGNITIVE BIOMETRIC WAVE
@@ -718,7 +865,7 @@ function showIdle() { idleActive = true; document.getElementById("idle").classLi
 function hideIdle() { idleActive = false; document.getElementById("idle").classList.remove("show"); resetIdleTO(); }
 function tickIdleClock() { if (!idleActive) return; const n = new Date(); document.getElementById("iClk").innerText = n.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", hour12: false }); document.getElementById("iDay").innerText = n.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" }).toLowerCase(); setTimeout(tickIdleClock, 1000); }
 function resetIdleTO() { clearTimeout(idleTO); idleTO = setTimeout(showIdle, 3 * 60 * 1000); }
-function initIdle() { initIdleOrb(); document.getElementById("idle").addEventListener("click", hideIdle); ["click", "keydown", "mousemove"].forEach(ev => document.addEventListener(ev, () => { if (!idleActive) resetIdleTO(); }, { passive: true })); resetIdleTO(); }
+function initIdle() { initIdleOrb(); document.getElementById("idle").addEventListener("click", hideIdle); ["click", "keydown", "mousemove", "touchstart"].forEach(ev => document.addEventListener(ev, () => { if (!idleActive) resetIdleTO(); }, { passive: true })); resetIdleTO(); }
 
 // ═══════════════════════════════════
 // COGNITIVE COLD BOOT PROTOCOL
@@ -733,16 +880,19 @@ const BOOT = [
 ];
 let bootDone = false;
 let bootStarted = false;
+let bootTimeouts = [];
+
 function runBoot() {
   if (bootStarted) return;
   bootStarted = true;
   speechSynthesis.onvoiceschanged = null; // Clean up Google Chrome audio hooks immediately
   const log = document.getElementById("bLog"), fill = document.getElementById("bFill"), n = BOOT.length;
   BOOT.forEach((l, i) => {
-    setTimeout(() => {
+    let to = setTimeout(() => {
       const el = document.createElement("div"); el.className = "bl " + l.c; el.innerText = l.t; log.appendChild(el); setTimeout(() => el.classList.add("s"), 20); fill.style.width = Math.round(((i + 1) / n) * 100) + "%";
       if (i === n - 1) setTimeout(() => { document.getElementById("bGo").classList.add("s"); bootDone = true; setTimeout(() => bSay("Neural pathways awake. Friday online, Boss."), 300); }, 450);
     }, l.d);
+    bootTimeouts.push(to);
   });
 }
 function bSay(t) {
@@ -751,10 +901,38 @@ function bSay(t) {
 }
 
 let bootDismissed = false;
-function dismissBoot() {
-  if (!bootDone || bootDismissed) return;
+let lastDismissTime = 0;
+
+function dismissBoot(e) {
+  const now = Date.now();
+  if (now - lastDismissTime < 250) return; // Prevent dual click/touch event triggers on smartphones
+  lastDismissTime = now;
+
+  if (bootDismissed) return;
+
+  // Touch Anywhere skip mechanism
+  if (!bootDone) {
+    bootTimeouts.forEach(clearTimeout);
+    bootTimeouts = [];
+    
+    const log = document.getElementById("bLog");
+    log.innerHTML = "";
+    BOOT.forEach(l => {
+      const el = document.createElement("div"); el.className = "bl s " + l.c; el.innerText = l.t; log.appendChild(el);
+    });
+    
+    document.getElementById("bFill").style.width = "100%";
+    document.getElementById("bGo").classList.add("s");
+    bootDone = true;
+    
+    speechSynthesis.cancel();
+    setTimeout(() => bSay("Neural pathways awake. Friday online, Boss."), 100);
+    return;
+  }
+
   bootDismissed = true;
   document.removeEventListener("keydown", handleBootKeydown); // Completely unbind boot listener immediately
+  
   const b = document.getElementById("boot");
   b.style.opacity = "0";
   setTimeout(() => {
@@ -772,6 +950,11 @@ window.addEventListener("load", () => {
   initOrb();
   initWave();
   document.addEventListener("keydown", handleBootKeydown);
+  
+  const bootEl = document.getElementById("boot");
+  bootEl.addEventListener("click", dismissBoot);
+  bootEl.addEventListener("touchstart", dismissBoot, { passive: true });
+  
   speechSynthesis.getVoices().length === 0 ? speechSynthesis.onvoiceschanged = runBoot : runBoot();
 });
 
@@ -1218,25 +1401,6 @@ function plAdv() {
   } else {
     closeO("foPL");
   }
-}
-
-// ═══════════════════════════════════
-// WEEKLY PROGRESS PROGRESSIONS
-// ═══════════════════════════════════
-function showWeekly() {
-  const d = getHD(); const now = new Date(); const dow = now.getDay(); const diff = dow === 0 ? 6 : dow - 1; const mon = new Date(now); mon.setDate(now.getDate() - diff); mon.setHours(0, 0, 0, 0); const sun = new Date(mon); sun.setDate(mon.getDate() + 6);
-  document.getElementById("weeklyRange").innerText = `${mon.toLocaleDateString("en-GB", { day: "numeric", month: "short" })} – ${sun.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}`.toLowerCase();
-  let daysIn = 0, wkXP = 0, hcnt = {}; d.habits.forEach((_, hi) => hcnt[hi] = 0);
-  for (let i = 0; i < 7; i++) { const day = new Date(mon); day.setDate(mon.getDate() + i); const ds = d2s(day); if (d.history[ds] && d.history[ds].length > 0) { daysIn++; d.history[ds].forEach(hi => { wkXP += d.habits[hi] ? d.habits[hi].xp : 0; if (hcnt[hi] !== undefined) hcnt[hi]++; }); } }
-  const sdL = JSON.parse(localStorage.getItem("fri_sdlog") || "[]").filter(e => { const dt = new Date(e.date); return dt >= mon && dt <= sun; });
-  const plL = JSON.parse(localStorage.getItem("fri_pllog") || "[]").find(e => { const dt = new Date(e.date); return dt >= mon && dt <= sun; });
-  let html = `<div class="wrs"><div class="wrh">hunter stats</div><div class="wrr"><span>days checked in</span><span>${daysIn}/7</span></div><div class="wrr"><span>xp earned</span><span>+${wkXP}</span></div><div class="wrr"><span>current streak</span><span>${d.streak}d</span></div><div class="wrr"><span>total xp</span><span>${d.totalXp}</span></div><div class="wrr"><span>rank</span><span>${RANKS[getRank(d.totalXp)]}</span></div></div>`;
-  html += `<div class="wrs"><div class="wrh">habit breakdown</div>${d.habits.map((h, hi) => `<div class="whr"><span style="min-width:90px">${h.name}</span><div class="whb"><div class="whbf" style="width:${Math.round((hcnt[hi] || 0) / 7 * 100)}%"></div></div><span style="min-width:28px;text-align:right;color:rgba(184,138,255,.7)">${hcnt[hi] || 0}/7</span></div>`).join("")}</div>`;
-  if (plL) html += `<div class="wrs"><div class="wrh">week intention</div><div style="font-size:11px;color:rgba(220,245,240,.7);line-height:1.6;padding:6px 0">${plL.intention || "—"}</div>${plL.focuses.length ? `<div style="font-size:8.5px;color:rgba(95,255,212,.4);margin-top:5px;letter-spacing:1px">focuses: ${plL.focuses.join(" · ")}</div>` : ""}</div>`;
-  if (sdL.length) html += `<div class="wrs"><div class="wrh">shutdown logs (${sdL.length})</div>${sdL.slice(-3).map(e => `<div style="padding:5px 0;border-bottom:1px solid rgba(255,255,255,.02)"><div style="font-size:7px;color:rgba(95,255,212,.3);letter-spacing:2px;margin-bottom:3px">${e.date}</div><div style="font-size:9.5px;color:rgba(220,245,240,.5);line-height:1.5">✓ ${e.finished || "—"}</div></div>`).join("")}</div>`;
-  html += `<div class="wrs"><div class="wrh">open tasks</div><div style="font-size:10px;color:rgba(220,245,240,.55);line-height:2">${reminders.length ? reminders.join("<br>") : "No open tasks."}</div></div>`;
-  document.getElementById("weeklyContent").innerHTML = html; togP("pWeekly");
-  speak(`Weekly report, Boss. ${daysIn} check-in days, ${wkXP} xp accumulated this week.`);
 }
 
 // ═══════════════════════════════════
