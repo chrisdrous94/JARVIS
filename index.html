@@ -732,7 +732,11 @@ const BOOT = [
   { t: "f.r.i.d.a.y. — awake", c: "ok", d: 1900 },
 ];
 let bootDone = false;
+let bootStarted = false;
 function runBoot() {
+  if (bootStarted) return;
+  bootStarted = true;
+  speechSynthesis.onvoiceschanged = null; // Clean up Google Chrome audio hooks immediately
   const log = document.getElementById("bLog"), fill = document.getElementById("bFill"), n = BOOT.length;
   BOOT.forEach((l, i) => {
     setTimeout(() => {
@@ -745,15 +749,40 @@ function bSay(t) {
   const u = new SpeechSynthesisUtterance(t); const vs = speechSynthesis.getVoices(); const v = vs.find(x => x.name.includes("Google UK English Female")) || vs.find(x => x.lang === "en-GB") || vs[0]; if (v) u.voice = v; u.pitch = 1.04; u.rate = .97; u.volume = .85;
   speechSynthesis.speak(u);
 }
-function dismissBoot() { if (!bootDone) return; const b = document.getElementById("boot"); b.style.opacity = "0"; setTimeout(() => { b.style.display = "none"; initApp(); }, 1200); }
-document.getElementById("boot").addEventListener("click", dismissBoot);
-document.addEventListener("keydown", e => { if (e.key !== "Tab") dismissBoot(); });
-window.addEventListener("load", () => { initBg(); initOrb(); initWave(); speechSynthesis.getVoices().length === 0 ? speechSynthesis.onvoiceschanged = runBoot : runBoot(); });
+
+let bootDismissed = false;
+function dismissBoot() {
+  if (!bootDone || bootDismissed) return;
+  bootDismissed = true;
+  document.removeEventListener("keydown", handleBootKeydown); // Completely unbind boot listener immediately
+  const b = document.getElementById("boot");
+  b.style.opacity = "0";
+  setTimeout(() => {
+    b.style.display = "none";
+    initApp();
+  }, 1200);
+}
+
+function handleBootKeydown(e) {
+  if (e.key !== "Tab") dismissBoot();
+}
+
+window.addEventListener("load", () => {
+  initBg();
+  initOrb();
+  initWave();
+  document.addEventListener("keydown", handleBootKeydown);
+  speechSynthesis.getVoices().length === 0 ? speechSynthesis.onvoiceschanged = runBoot : runBoot();
+});
 
 // ═══════════════════════════════════
 // NEURAL SYSTEM UPLINK
 // ═══════════════════════════════════
+let appInitialised = false;
 function initApp() {
+  if (appInitialised) return; // Prevent double execution leaks permanently
+  appInitialised = true;
+
   checkM(); startClock(); initHW(); initWx(); fetchNews(); diagLoop(); bindUI();
   renderHunter(); renderTasks(); renderMITs(); loadCD(); initIdle(); checkTriggers();
   setTimeout(() => {
@@ -796,7 +825,8 @@ async function initWx() {
       const wr = await (await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${la}&longitude=${lo}&current_weather=true`)).json();
       const t = Math.round(wr.current_weather.temperature); wx.temp = t; document.getElementById("ts").innerText = t + "°"; document.getElementById("envT").innerText = t + "°C";
       const ar = await (await fetch(`https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${la}&longitude=${lo}&current=european_aqi`)).json();
-      const aqi = ar.current.european_aqi; wx.aqi = aqi; const cond = aqi <= 20 ? "optimal" : aqi <= 40 ? "fair" : "moderate" ? "hazardous" : "hazardous"; wx.cond = cond;
+      const aqi = ar.current.european_aqi; wx.aqi = aqi; 
+      const cond = aqi <= 20 ? "optimal" : aqi <= 40 ? "fair" : aqi <= 60 ? "moderate" : "hazardous"; wx.cond = cond;
       document.getElementById("envA").innerText = aqi; document.getElementById("envC").innerText = cond;
     } catch (e) { }
   }, () => { });
