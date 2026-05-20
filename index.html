@@ -112,8 +112,19 @@ body::after { content: ""; position: fixed; inset: 0; z-index: 9999; pointer-eve
 #app { position: relative; z-index: 1; width: 100vw; height: 100vh; padding: 60px 0 44px; display: flex; align-items: center; justify-content: center; overflow: hidden; }
 
 /* ========== HUB CENTER ========== */
-#hub { display: flex; flex-direction: column; align-items: center; width: min(440px, 94vw); max-height: 100%; justify-content: center; gap: 0; overflow-y: auto; overflow-x: hidden; scrollbar-width: none; }
-#hub::-webkit-scrollbar { display: none; }
+#hub { 
+  display: flex; 
+  flex-direction: column; 
+  align-items: center; 
+  width: min(440px, 94vw); 
+  max-height: 100%; 
+  justify-content: flex-start; /* FIX: Stops content from pushing upwards off-screen */
+  gap: 0; 
+  overflow-y: auto; 
+  overflow-x: hidden; 
+  scrollbar-width: none; 
+  padding: 16px 0; /* FIX: Adds a little breathing room when scrolling */
+}
 
 /* ========== ORB ========== */
 #orbWrap { position: relative; width: 220px; height: 220px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; cursor: pointer; }
