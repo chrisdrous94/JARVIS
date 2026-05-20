@@ -1522,6 +1522,7 @@ function toggleLoop() { loopOn ? stopLoop() : startLoop(); }
 function startLoop() {
   if (!rec && !buildRec()) return;
   loopOn = true;
+  busy = false;
   document.getElementById("loopStatus").textContent = "loop active";
   document.getElementById("loopStatus").style.color = "rgba(0,229,160,.55)";
   document.getElementById("dLoop").classList.add("active");
