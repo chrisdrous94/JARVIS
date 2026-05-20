@@ -111,23 +111,21 @@ body::after { content: ""; position: fixed; inset: 0; z-index: 9999; pointer-eve
 /* ========== MAIN LAYOUT ========== */
 #app { position: relative; z-index: 1; width: 100vw; height: 100vh; padding: 60px 0 44px; display: flex; align-items: center; justify-content: center; overflow: hidden; }
 
-/* ========== HUB CENTER (FIXED FOR SQUISHING BUG) ========== */
+/* ========== HUB CENTER ========== */
 #hub { 
   display: flex; 
   flex-direction: column; 
   align-items: center; 
   width: min(460px, 94vw); 
   height: 100%; 
-  justify-content: flex-start; /* Fixes top cut-off */
+  justify-content: flex-start;
   gap: 0; 
   overflow-y: auto; 
   overflow-x: hidden; 
   scrollbar-width: none; 
 }
 #hub::-webkit-scrollbar { display: none; }
-/* Safe Flexbox Centering: acts like justify-content: center, but safely pushes upwards on overflow! */
 #hub::before, #hub::after { content: ""; margin: auto; display: block; flex-shrink: 0; min-height: 16px; }
-/* Stop ALL children from shrinking so they don't get squished, forcing proper vertical scroll */
 #hub > * { flex-shrink: 0; }
 
 /* ========== ORB ========== */
@@ -198,14 +196,9 @@ body::after { content: ""; position: fixed; inset: 0; z-index: 9999; pointer-eve
 .dock-btn.active-v .dock-label { color: var(--md-sys-color-secondary); }
 .dock-btn.hot .dock-label { color: rgba(255,150,170,0.9); }
 
-/* ========== MODE SWITCHER ========== */
-.mode-bar { display: flex; align-items: center; gap: 8px; justify-content: center; margin-top: 14px; width: 100%; }
-.mode-dot { width: 12px; height: 12px; border-radius: 50%; cursor: pointer; border: 1px solid var(--md-sys-color-outline-variant); background: transparent; transition: all var(--transition-med); }
-.mode-dot.standard.active { background: rgba(0,229,200,0.4); border-color: var(--md-sys-color-primary); box-shadow: 0 0 8px rgba(0,229,200,0.35); }
-.mode-dot.stealth.active { background: rgba(255,83,112,0.4); border-color: var(--md-sys-color-error); box-shadow: 0 0 8px rgba(255,83,112,0.35); }
-.mode-dot.alert-mode.active { background: rgba(255,179,71,0.4); border-color: var(--md-sys-color-warning); box-shadow: 0 0 8px rgba(255,179,71,0.35); }
-.mode-label { font-family: var(--font-mono); font-size: 9px; letter-spacing: 2px; color: var(--md-sys-color-on-surface-variant); margin-left: 4px; }
-.reset-btn { background: transparent; border: none; color: var(--md-sys-color-on-surface-variant); font-family: var(--font-mono); font-size: 9px; letter-spacing: 1px; cursor: pointer; margin-left: auto; padding: 6px; opacity: 0.5; transition: opacity var(--transition-fast); }
+/* ========== RESET AUTH BAR ========== */
+.mode-bar { display: flex; align-items: center; justify-content: center; margin-top: 14px; width: 100%; }
+.reset-btn { background: transparent; border: none; color: var(--md-sys-color-on-surface-variant); font-family: var(--font-mono); font-size: 9px; letter-spacing: 1px; cursor: pointer; padding: 6px; opacity: 0.5; transition: opacity var(--transition-fast); }
 .reset-btn:hover { opacity: 1; }
 
 /* ========== PANEL SYSTEM ========== */
@@ -444,7 +437,6 @@ input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 16px;
 <body>
 <canvas id="bgCanvas"></canvas>
 
-<!-- BOOT -->
 <div id="bootScreen">
   <div class="boot-logo"><span class="material-icons-round">memory</span></div>
   <div class="boot-title">F·R·I·D·A·Y</div>
@@ -455,7 +447,6 @@ input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 16px;
   <div class="boot-tap">touch anywhere to enter</div>
 </div>
 
-<!-- IDLE -->
 <div id="idleScreen">
   <canvas id="idleOrbCanvas" width="180" height="180"></canvas>
   <div class="idle-time" id="idleClock">--:--</div>
@@ -463,7 +454,6 @@ input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 16px;
   <div class="idle-hint">touch to return</div>
 </div>
 
-<!-- TOP BAR -->
 <div id="topBar">
   <div class="top-left">
     <div class="status-chip">
@@ -478,18 +468,15 @@ input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 16px;
   <div class="top-right">
     <span class="top-meta" id="loopStatus" style="color:rgba(255,83,112,.55)">loop idle</span>
     <span class="top-meta" id="netStatus">mesh up</span>
-    <span class="top-meta" id="modeStatus" style="color:rgba(0,229,200,.4)">standard</span>
   </div>
 </div>
 
-<!-- BOTTOM BAR -->
 <div id="bottomBar">
   <div class="live-badge">LIVE</div>
   <div class="ticker-wrap"><span class="ticker-text" id="tickerText">neural uplink initialising…</span></div>
   <button class="news-btn" id="newsBtn">open news</button>
 </div>
 
-<!-- API MODAL -->
 <div id="apiModal">
   <div class="api-card">
     <div class="api-icon"><span class="material-icons-round">vpn_key</span></div>
@@ -501,9 +488,6 @@ input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 16px;
   </div>
 </div>
 
-<!-- ===== PANELS (Responsive Position Classes Added) ===== -->
-
-<!-- Comms -->
 <div class="panel loc-tl" id="pComms">
   <div class="panel-handle"></div>
   <div class="panel-header">
@@ -515,7 +499,6 @@ input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 16px;
   </div>
 </div>
 
-<!-- Hunter -->
 <div class="panel violet loc-tr" id="pHunter">
   <div class="panel-handle"></div>
   <div class="panel-header">
@@ -544,7 +527,6 @@ input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 16px;
   </div>
 </div>
 
-<!-- Environment -->
 <div class="panel loc-bl" id="pEnv">
   <div class="panel-handle"></div>
   <div class="panel-header">
@@ -563,7 +545,6 @@ input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 16px;
   </div>
 </div>
 
-<!-- Audio -->
 <div class="panel loc-bl" id="pAudio">
   <div class="panel-handle"></div>
   <div class="panel-header">
@@ -591,7 +572,6 @@ input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 16px;
   </div>
 </div>
 
-<!-- Tasks -->
 <div class="panel loc-br" id="pTasks">
   <div class="panel-handle"></div>
   <div class="panel-header">
@@ -605,7 +585,6 @@ input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 16px;
   </div>
 </div>
 
-<!-- MIT Panel -->
 <div class="panel loc-tl" id="pMIT">
   <div class="panel-handle"></div>
   <div class="panel-header">
@@ -618,7 +597,6 @@ input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 16px;
   </div>
 </div>
 
-<!-- Timebox -->
 <div class="panel loc-tr" id="pTimebox">
   <div class="panel-handle"></div>
   <div class="panel-header">
@@ -630,7 +608,6 @@ input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 16px;
   </div>
 </div>
 
-<!-- Weekly -->
 <div class="panel violet loc-c" id="pWeekly" style="max-width:520px;">
   <div class="panel-handle"></div>
   <div class="panel-header">
@@ -644,7 +621,6 @@ input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 16px;
   </div>
 </div>
 
-<!-- Help -->
 <div class="panel loc-c" id="pHelp" style="max-width: 440px;">
   <div class="panel-handle"></div>
   <div class="panel-header">
@@ -669,9 +645,6 @@ input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 16px;
   </div>
 </div>
 
-<!-- ===== FLOW OVERLAYS ===== -->
-
-<!-- Check-In -->
 <div class="flow-overlay" id="foCheckIn">
   <div class="flow-card violet">
     <div class="flow-tag">hunter system · daily assessment</div>
@@ -683,7 +656,6 @@ input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 16px;
   </div>
 </div>
 
-<!-- MIT -->
 <div class="flow-overlay" id="foMIT">
   <div class="flow-card">
     <div class="flow-tag">mit protocol · today's top 3</div>
@@ -699,7 +671,6 @@ input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 16px;
   </div>
 </div>
 
-<!-- Countdown -->
 <div class="flow-overlay" id="foCountdown">
   <div class="flow-card">
     <div class="flow-tag">countdown clock · set deadline</div>
@@ -714,7 +685,6 @@ input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 16px;
   </div>
 </div>
 
-<!-- Shutdown -->
 <div class="flow-overlay" id="foShutdown">
   <div class="flow-card">
     <div class="flow-tag">end of day · shutdown protocol</div>
@@ -746,7 +716,6 @@ input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 16px;
   </div>
 </div>
 
-<!-- Weekly Planning -->
 <div class="flow-overlay" id="foPlanning">
   <div class="flow-card violet">
     <div class="flow-tag">monday ritual · weekly planning</div>
@@ -785,7 +754,6 @@ input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 16px;
   </div>
 </div>
 
-<!-- Level Up Flash -->
 <div id="levelUpFlash">
   <div class="lu-text">level up</div>
   <div class="lu-sub" id="luSubtext">rank increased</div>
@@ -793,7 +761,6 @@ input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 16px;
 
 <div id="toast"></div>
 
-<!-- ===== MAIN HUB ===== -->
 <div id="app">
   <div id="hub">
     <div id="orbWrap">
@@ -847,10 +814,6 @@ input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 16px;
     </div>
 
     <div class="mode-bar">
-      <div class="mode-dot standard active" id="modeS" onclick="setMode('standard')" title="Standard"></div>
-      <div class="mode-dot stealth" id="modeL" onclick="setMode('stealth')" title="Stealth"></div>
-      <div class="mode-dot alert-mode" id="modeA" onclick="setMode('alert')" title="Alert"></div>
-      <span class="mode-label" id="modeLbl">standard</span>
       <button class="reset-btn" onclick="localStorage.removeItem('fri_key');location.reload()">reset auth</button>
     </div>
   </div>
@@ -2056,18 +2019,6 @@ function checkDailyTriggers() {
 }
 
 // ═══════════════════════════════════════════════════════════
-// MODE SELECTOR
-// ═══════════════════════════════════════════════════════════
-function setMode(m) {
-  document.getElementById("modeS").classList.toggle("active", m==="standard");
-  document.getElementById("modeL").classList.toggle("active", m==="stealth");
-  document.getElementById("modeA").classList.toggle("active", m==="alert");
-  const lbl = document.getElementById("modeLbl");
-  lbl.textContent = m; document.getElementById("modeStatus").textContent = m;
-  speak(`${m} mode, Boss.`);
-}
-
-// ═══════════════════════════════════════════════════════════
 // AUDIO
 // ═══════════════════════════════════════════════════════════
 function openYT(url, title) {
@@ -2193,9 +2144,6 @@ async function handleInput(cmd) {
     let t=q.replace(/\b(friday|timebox|schedule\s+my\s+day)\b/gi,"").trim();
     await timeboxDay(t||null); return;
   }
-  if (q.includes("stealth")) { setMode("stealth"); return; }
-  if (q.includes("alert mode")) { setMode("alert"); return; }
-  if (q.includes("standard mode")) { setMode("standard"); return; }
   if (q.includes("stop")||q==="sleep") { stopLoop(); speak("Going to standby, Boss."); return; }
   if (q.includes("news")) { openNews(); speak("Opening live news feed, Boss."); return; }
 
