@@ -111,23 +111,27 @@ body::after { content: ""; position: fixed; inset: 0; z-index: 9999; pointer-eve
 /* ========== MAIN LAYOUT ========== */
 #app { position: relative; z-index: 1; width: 100vw; height: 100vh; padding: 60px 0 44px; display: flex; align-items: center; justify-content: center; overflow: hidden; }
 
-/* ========== HUB CENTER ========== */
+/* ========== HUB CENTER (FIXED FOR SQUISHING BUG) ========== */
 #hub { 
   display: flex; 
   flex-direction: column; 
   align-items: center; 
-  width: min(440px, 94vw); 
-  max-height: 100%; 
-  justify-content: flex-start; /* FIX: Stops content from pushing upwards off-screen */
+  width: min(460px, 94vw); 
+  height: 100%; 
+  justify-content: flex-start; /* Fixes top cut-off */
   gap: 0; 
   overflow-y: auto; 
   overflow-x: hidden; 
   scrollbar-width: none; 
-  padding: 16px 0; /* FIX: Adds a little breathing room when scrolling */
 }
+#hub::-webkit-scrollbar { display: none; }
+/* Safe Flexbox Centering: acts like justify-content: center, but safely pushes upwards on overflow! */
+#hub::before, #hub::after { content: ""; margin: auto; display: block; flex-shrink: 0; min-height: 16px; }
+/* Stop ALL children from shrinking so they don't get squished, forcing proper vertical scroll */
+#hub > * { flex-shrink: 0; }
 
 /* ========== ORB ========== */
-#orbWrap { position: relative; width: 220px; height: 220px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; cursor: pointer; }
+#orbWrap { position: relative; width: 220px; height: 220px; display: flex; align-items: center; justify-content: center; cursor: pointer; }
 #orbCanvas { width: 220px; height: 220px; border-radius: 50%; display: block; }
 .timer-svg { position: absolute; top: 0; left: 0; pointer-events: none; }
 .timer-arc { fill: none; stroke: rgba(0,229,200,0.2); stroke-width: 1.5; stroke-dasharray: 660; stroke-dashoffset: 660; transition: stroke-dashoffset 1s linear; stroke-linecap: round; }
@@ -160,7 +164,7 @@ body::after { content: ""; position: fixed; inset: 0; z-index: 9999; pointer-eve
 .mit-item { display: flex; align-items: center; gap: 8px; padding: 5px 0; border-bottom: 1px solid var(--md-sys-color-outline-variant); }
 .mit-item:last-child { border-bottom: none; }
 .mit-num { font-family: var(--font-mono); font-size: 8px; color: var(--md-sys-color-on-surface-variant); flex-shrink: 0; min-width: 20px; }
-.mit-text { font-size: 11px; color: var(--md-sys-color-on-surface); flex: 1; line-height: 1.4; }
+.mit-text { font-size: 12px; color: var(--md-sys-color-on-surface); flex: 1; line-height: 1.4; }
 .mit-text.done { text-decoration: line-through; opacity: 0.28; }
 .mit-check { width: 18px; height: 18px; border: 1px solid var(--md-sys-color-outline); border-radius: 50%; cursor: pointer; flex-shrink: 0; display: flex; align-items: center; justify-content: center; transition: all var(--transition-fast); }
 .mit-check:hover { border-color: rgba(0,229,200,0.4); }
@@ -168,16 +172,16 @@ body::after { content: ""; position: fixed; inset: 0; z-index: 9999; pointer-eve
 .mit-check.done .material-icons-round { font-size: 12px; color: var(--md-sys-color-primary); }
 
 /* ========== COMMAND INPUT ========== */
-.cmd-wrap { display: flex; gap: 8px; margin-top: 12px; width: 100%; align-items: center; }
+.cmd-wrap { display: flex; gap: 8px; margin-top: 16px; width: 100%; align-items: center; }
 .cmd-input { flex: 1; background: var(--md-sys-color-surface-2); border: 1px solid var(--md-sys-color-outline-variant); border-radius: var(--radius-md); color: var(--md-sys-color-on-surface); padding: 12px 14px; font-family: var(--font-mono); font-size: 12px; outline: none; letter-spacing: 0.5px; transition: border-color var(--transition-fast), background var(--transition-fast); }
 .cmd-input::placeholder { color: rgba(0,229,200,0.2); font-style: italic; }
 .cmd-input:focus { border-color: rgba(0,229,200,0.3); background: var(--md-sys-color-surface-3); }
-.cmd-send { width: 42px; height: 42px; border-radius: 50%; border: none; background: var(--md-sys-color-primary-dim); color: var(--md-sys-color-primary); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all var(--transition-fast); flex-shrink: 0; border: 1px solid rgba(0,229,200,0.2); }
+.cmd-send { width: 44px; height: 44px; border-radius: 50%; border: none; background: var(--md-sys-color-primary-dim); color: var(--md-sys-color-primary); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all var(--transition-fast); flex-shrink: 0; border: 1px solid rgba(0,229,200,0.2); }
 .cmd-send:hover { background: rgba(0,229,200,0.25); transform: scale(1.05); }
 .cmd-send .material-icons-round { font-size: 20px; }
 
 /* ========== FLUID DOCK ========== */
-#dock { display: grid; grid-template-columns: repeat(auto-fit, minmax(70px, 1fr)); gap: 8px; margin-top: 12px; width: 100%; max-height: 160px; overflow-y: auto; padding-right: 1px; scrollbar-width: thin; scrollbar-color: rgba(0,229,200,0.1) transparent; }
+#dock { display: grid; grid-template-columns: repeat(auto-fit, minmax(70px, 1fr)); gap: 8px; margin-top: 14px; width: 100%; max-height: 180px; overflow-y: auto; padding-right: 1px; scrollbar-width: thin; scrollbar-color: rgba(0,229,200,0.1) transparent; }
 .dock-btn { display: flex; flex-direction: column; align-items: center; gap: 4px; cursor: pointer; padding: 10px 4px; border-radius: var(--radius-md); background: var(--md-sys-color-surface-2); border: 1px solid var(--md-sys-color-outline-variant); transition: all var(--transition-fast); min-width: 0; text-align: center; position: relative; overflow: hidden; }
 .dock-btn::before { content: ""; position: absolute; inset: 0; border-radius: inherit; background: var(--md-sys-color-primary-dim); opacity: 0; transition: opacity var(--transition-fast); }
 .dock-btn:hover::before { opacity: 1; }
@@ -440,6 +444,7 @@ input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 16px;
 <body>
 <canvas id="bgCanvas"></canvas>
 
+<!-- BOOT -->
 <div id="bootScreen">
   <div class="boot-logo"><span class="material-icons-round">memory</span></div>
   <div class="boot-title">F·R·I·D·A·Y</div>
@@ -450,6 +455,7 @@ input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 16px;
   <div class="boot-tap">touch anywhere to enter</div>
 </div>
 
+<!-- IDLE -->
 <div id="idleScreen">
   <canvas id="idleOrbCanvas" width="180" height="180"></canvas>
   <div class="idle-time" id="idleClock">--:--</div>
@@ -457,6 +463,7 @@ input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 16px;
   <div class="idle-hint">touch to return</div>
 </div>
 
+<!-- TOP BAR -->
 <div id="topBar">
   <div class="top-left">
     <div class="status-chip">
@@ -475,12 +482,14 @@ input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 16px;
   </div>
 </div>
 
+<!-- BOTTOM BAR -->
 <div id="bottomBar">
   <div class="live-badge">LIVE</div>
   <div class="ticker-wrap"><span class="ticker-text" id="tickerText">neural uplink initialising…</span></div>
   <button class="news-btn" id="newsBtn">open news</button>
 </div>
 
+<!-- API MODAL -->
 <div id="apiModal">
   <div class="api-card">
     <div class="api-icon"><span class="material-icons-round">vpn_key</span></div>
@@ -492,6 +501,9 @@ input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 16px;
   </div>
 </div>
 
+<!-- ===== PANELS (Responsive Position Classes Added) ===== -->
+
+<!-- Comms -->
 <div class="panel loc-tl" id="pComms">
   <div class="panel-handle"></div>
   <div class="panel-header">
@@ -503,6 +515,7 @@ input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 16px;
   </div>
 </div>
 
+<!-- Hunter -->
 <div class="panel violet loc-tr" id="pHunter">
   <div class="panel-handle"></div>
   <div class="panel-header">
@@ -531,6 +544,7 @@ input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 16px;
   </div>
 </div>
 
+<!-- Environment -->
 <div class="panel loc-bl" id="pEnv">
   <div class="panel-handle"></div>
   <div class="panel-header">
@@ -549,6 +563,7 @@ input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 16px;
   </div>
 </div>
 
+<!-- Audio -->
 <div class="panel loc-bl" id="pAudio">
   <div class="panel-handle"></div>
   <div class="panel-header">
@@ -576,6 +591,7 @@ input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 16px;
   </div>
 </div>
 
+<!-- Tasks -->
 <div class="panel loc-br" id="pTasks">
   <div class="panel-handle"></div>
   <div class="panel-header">
@@ -589,6 +605,7 @@ input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 16px;
   </div>
 </div>
 
+<!-- MIT Panel -->
 <div class="panel loc-tl" id="pMIT">
   <div class="panel-handle"></div>
   <div class="panel-header">
@@ -601,6 +618,7 @@ input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 16px;
   </div>
 </div>
 
+<!-- Timebox -->
 <div class="panel loc-tr" id="pTimebox">
   <div class="panel-handle"></div>
   <div class="panel-header">
@@ -612,6 +630,7 @@ input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 16px;
   </div>
 </div>
 
+<!-- Weekly -->
 <div class="panel violet loc-c" id="pWeekly" style="max-width:520px;">
   <div class="panel-handle"></div>
   <div class="panel-header">
@@ -625,6 +644,7 @@ input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 16px;
   </div>
 </div>
 
+<!-- Help -->
 <div class="panel loc-c" id="pHelp" style="max-width: 440px;">
   <div class="panel-handle"></div>
   <div class="panel-header">
@@ -649,6 +669,9 @@ input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 16px;
   </div>
 </div>
 
+<!-- ===== FLOW OVERLAYS ===== -->
+
+<!-- Check-In -->
 <div class="flow-overlay" id="foCheckIn">
   <div class="flow-card violet">
     <div class="flow-tag">hunter system · daily assessment</div>
@@ -660,6 +683,7 @@ input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 16px;
   </div>
 </div>
 
+<!-- MIT -->
 <div class="flow-overlay" id="foMIT">
   <div class="flow-card">
     <div class="flow-tag">mit protocol · today's top 3</div>
@@ -675,6 +699,7 @@ input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 16px;
   </div>
 </div>
 
+<!-- Countdown -->
 <div class="flow-overlay" id="foCountdown">
   <div class="flow-card">
     <div class="flow-tag">countdown clock · set deadline</div>
@@ -689,6 +714,7 @@ input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 16px;
   </div>
 </div>
 
+<!-- Shutdown -->
 <div class="flow-overlay" id="foShutdown">
   <div class="flow-card">
     <div class="flow-tag">end of day · shutdown protocol</div>
@@ -720,6 +746,7 @@ input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 16px;
   </div>
 </div>
 
+<!-- Weekly Planning -->
 <div class="flow-overlay" id="foPlanning">
   <div class="flow-card violet">
     <div class="flow-tag">monday ritual · weekly planning</div>
@@ -758,6 +785,7 @@ input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 16px;
   </div>
 </div>
 
+<!-- Level Up Flash -->
 <div id="levelUpFlash">
   <div class="lu-text">level up</div>
   <div class="lu-sub" id="luSubtext">rank increased</div>
@@ -765,6 +793,7 @@ input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 16px;
 
 <div id="toast"></div>
 
+<!-- ===== MAIN HUB ===== -->
 <div id="app">
   <div id="hub">
     <div id="orbWrap">
@@ -1028,14 +1057,12 @@ function initOrb() {
                        : { p:"rgba(0,229,200,",  s:"rgba(187,134,252,",g:"rgba(120,200,255," };
     const active = orbState !== "idle";
 
-    // Outer glow rings
     for (let i=3;i>=1;i--) {
       const r = 94+i*10+Math.sin(t*.7+i)*4;
       const a = (.02-i*.005)*(active ? 1.9 : 1);
       ctx.beginPath(); ctx.arc(cx,cy,r,0,Math.PI*2);
       ctx.strokeStyle = C.g+a+")"; ctx.lineWidth = i*2.5; ctx.stroke();
     }
-    // Rotating arcs
     for (let i=0;i<4;i++) {
       const ang = t*(.28+i*.1)+(i/4)*Math.PI*2, r2=76+Math.sin(t+i)*5;
       ctx.beginPath(); ctx.arc(cx,cy,r2,ang,ang+Math.PI*.55);
@@ -1043,13 +1070,11 @@ function initOrb() {
       g.addColorStop(0,"transparent"); g.addColorStop(.5,C.p+(active?.35:.18)+")"); g.addColorStop(1,"transparent");
       ctx.strokeStyle=g; ctx.lineWidth=1; ctx.stroke();
     }
-    // Counter-arcs
     for (let i=0;i<3;i++) {
       const ang = -t*(.22+i*.08)+(i/3)*Math.PI*2, r2=62+Math.sin(t*1.1+i)*4;
       ctx.beginPath(); ctx.arc(cx,cy,r2,ang,ang+Math.PI*.4);
       ctx.strokeStyle=C.s+(active?.26:.11)+")"; ctx.lineWidth=.8; ctx.stroke();
     }
-    // Wave lines
     const wA = active ? 10 : 3.5;
     for (let w=0;w<4;w++) {
       const yO = cy-15+w*10;
@@ -1061,14 +1086,12 @@ function initOrb() {
       ctx.strokeStyle=w%2===0 ? C.p+(.07+wA*.005)+")" : C.s+(.05+wA*.003)+")";
       ctx.lineWidth=.7; ctx.stroke();
     }
-    // Core sphere
     const cR = 38+Math.sin(t*1.8)*(active ? 3.8 : 1.5);
     const gr = ctx.createRadialGradient(cx-10,cy-10,2,cx,cy,cR);
     if (isListen) { gr.addColorStop(0,"rgba(255,220,230,.95)"); gr.addColorStop(.3,"rgba(255,100,130,.88)"); gr.addColorStop(.72,"rgba(190,20,50,.7)"); gr.addColorStop(1,"rgba(100,0,20,0)"); }
     else if (isSpeak) { gr.addColorStop(0,"rgba(200,255,250,.95)"); gr.addColorStop(.3,"rgba(0,229,200,.88)"); gr.addColorStop(.72,"rgba(0,160,140,.7)"); gr.addColorStop(1,"rgba(0,80,70,0)"); }
     else { gr.addColorStop(0,"rgba(220,255,252,.92)"); gr.addColorStop(.2,"rgba(0,229,200,.64)"); gr.addColorStop(.55,"rgba(130,80,230,.54)"); gr.addColorStop(.85,"rgba(40,10,110,.3)"); gr.addColorStop(1,"rgba(0,0,40,0)"); }
     ctx.beginPath(); ctx.arc(cx,cy,cR,0,Math.PI*2); ctx.fillStyle=gr; ctx.fill();
-    // Specular highlight
     const sg=ctx.createRadialGradient(cx-12,cy-12,1,cx-6,cy-6,cR*.5);
     sg.addColorStop(0,"rgba(255,255,255,.35)"); sg.addColorStop(1,"rgba(255,255,255,0)");
     ctx.beginPath(); ctx.arc(cx,cy,cR,0,Math.PI*2); ctx.fillStyle=sg; ctx.fill();
